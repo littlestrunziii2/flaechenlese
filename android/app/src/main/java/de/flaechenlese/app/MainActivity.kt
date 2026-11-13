@@ -1,0 +1,117 @@
+package de.flaechenlese.app
+
+import android.app.Activity
+import android.content.Intent
+import android.graphics.Color
+import android.net.Uri
+import android.os.Bundle
+import android.print.PrintAttributes
+import android.print.PrintManager
+import android.webkit.ValueCallback
+import android.webkit.WebChromeClient
+import android.webkit.WebResourceRequest
+import android.webkit.WebView
+import android.webkit.WebViewClient
+
+/** Zeigt die Flächenlese-Web-App an und verbindet sie mit Widget und Benachrichtigungen. */
+class MainActivity : Activity() {
+
+    companion object {
+        const val START_URL = "https://littlestrunziii2.github.io/flaechenlese/"
+        private const val HOST = "littlestrunziii2.github.io"
+        private const val REQ_FILE = 7
+    }
+
+    lateinit var web: WebView
+    private var fileCallback: ValueCallback<Array<Uri>>? = null
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        web = WebView(this)
+        web.setBackgroundColor(Color.parseColor("#0F0F0F"))
+        setContentView(web)
+
+        with(web.settings) {
+            javaScriptEnabled = true
+            domStorageEnabled = true
+            @Suppress("DEPRECATION")
+            databaseEnabled = true
+            setSupportMultipleWindows(false)
+            allowFileAccess = false
+            textZoom = 100
+        }
+        web.addJavascriptInterface(Bridge(this), "FLApp")
+
+        web.webViewClient = object : WebViewClient() {
+            override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
+                val u = request.url
+                if (u.host == HOST && (u.path ?: "").startsWith("/flaechenlese")) return false
+                openExternal(u)
+                return true
+            }
+        }
+
+        web.webChromeClient = object : WebChromeClient() {
+            override fun onShowFileChooser(
+                view: WebView, callback: ValueCallback<Array<Uri>>, params: FileChooserParams
+            ): Boolean {
+                fileCallback?.onReceiveValue(null)
+                fileCallback = callback
+                return try {
+                    val i = Intent(Intent.ACTION_GET_CONTENT).addCategory(Intent.CATEGORY_OPENABLE).setType("*/*")
+                    @Suppress("DEPRECATION")
+                    startActivityForResult(Intent.createChooser(i, "Datei wählen"), REQ_FILE)
+                    true
+                } catch (e: Exception) {
+                    fileCallback = null
+                    false
+                }
+            }
+        }
+
+        if (savedInstanceState != null) web.restoreState(savedInstanceState) else web.loadUrl(START_URL)
+    }
+
+    fun openExternal(u: Uri) {
+        try { startActivity(Intent(Intent.ACTION_VIEW, u)) } catch (e: Exception) { }
+    }
+
+    @Deprecated("Deprecated in Java")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        if (requestCode == REQ_FILE) {
+            fileCallback?.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(resultCode, data))
+            fileCallback = null
+        } else {
+            @Suppress("DEPRECATION")
+            super.onActivityResult(requestCode, resultCode, data)
+        }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        web.saveState(outState)
+    }
+
+    @Deprecated("Deprecated in Java")
+    override fun onBackPressed() {
+        if (web.canGoBack()) web.goBack() else {
+            @Suppress("DEPRECATION")
+            super.onBackPressed()
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (::web.isInitialized) web.evaluateJavascript("window.flNativeResume && window.flNativeResume()", null)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        TodayWidget.updateAll(this)
+    }
+
+    fun printPage() {
+        val pm = getSystemService(PrintManager::class.java) ?: return
+        pm.print("Flächenlese", web.createPrintDocumentAdapter("Flaechenlese"), PrintAttributes.Builder().build())
+    }
+}

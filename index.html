@@ -206,7 +206,8 @@ const PLANS = {"L": {"1": ["1. Mose 1", "1. Mose 2-3", "1. Mose 4-6", "1. Mose 7
 const STORE = 'flaechenlese_data_v1';
 let P = {};
 function load(){ try{ P = JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }catch(e){ P = {}; } }
-function save(){ try{ localStorage.setItem(STORE, JSON.stringify(P)); }catch(e){ if(!save._warned){ save._warned = true; setTimeout(() => toast('⚠️ Speichern fehlgeschlagen – bitte Backup erstellen'), 0); } } }
+const NATIVE = !!(window.FLApp && typeof window.FLApp.sync === 'function');
+function save(){ scheduleNativeSync(); try{ localStorage.setItem(STORE, JSON.stringify(P)); }catch(e){ if(!save._warned){ save._warned = true; setTimeout(() => toast('⚠️ Speichern fehlgeschlagen – bitte Backup erstellen'), 0); } } }
 const hasUserData = () => Object.keys(P).some(k => /^(read_days|small_read_days|custom_read_|r_|v_|n_|wr_|wv_|mr_|yr_)/.test(k) && (Array.isArray(P[k]) ? P[k].length : String(P[k]).trim()));
 const getSet = k => new Set(P[k] || []);
 const putSet = (k, s) => { P[k] = [...s]; };
@@ -399,6 +400,7 @@ function applyThemeColors(t){
   set('--ovbg', t.bg); set('--ovsurf', t.surface); set('--ovborder', mixC(t.text, t.bg, .82));
   st.colorScheme = light ? 'light' : 'dark';
   const m = document.querySelector('meta[name=theme-color]'); if(m) m.content = t.bg;
+  if(NATIVE){ try{ window.FLApp.setBars(t.bg, t.nav, light); }catch(e){} }
 }
 function themeCard(){
   const cur = themeById(P.theme) ? (P.theme || 'grau') : 'grau', isCustom = cur.startsWith('u_');
@@ -474,7 +476,9 @@ function dialog(title, bodyHtml, actions, opts={}){
 }
 function confirmDialog(title, text, okLabel, onOk){ dialog(esc(title), `<div>${esc(text)}</div>`, [{label:'Abbrechen'},{label:okLabel, filled:true, onClick:onOk}]); }
 
+function utf8b64(str){ const bytes = new TextEncoder().encode(str); let bin = ''; for(let i=0;i<bytes.length;i+=0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i+0x8000)); return btoa(bin); }
 async function saveFile(filename, data, mime, preferShare=false){
+  if(NATIVE){ try{ return !!window.FLApp.saveFile(filename, mime, utf8b64(String(data))); }catch(e){ toast('Speichern nicht möglich'); return false; } }
   if(preferShare && !(window.claude && window.claude.use) && navigator.canShare){
     try{
       const file = new File([data], filename, {type: mime});
@@ -494,7 +498,7 @@ async function saveFile(filename, data, mime, preferShare=false){
     return true;
   }catch(e){ toast('Speichern nicht möglich'); return false; }
 }
-async function copyText(t){ try{ await navigator.clipboard.writeText(t); toast('In Zwischenablage kopiert'); }catch(e){ toast('Kopieren nicht möglich'); } }
+async function copyText(t){ if(NATIVE){ try{ window.FLApp.copy(t); toast('In Zwischenablage kopiert'); return; }catch(e){} } try{ await navigator.clipboard.writeText(t); toast('In Zwischenablage kopiert'); }catch(e){ toast('Kopieren nicht möglich'); } }
 
 /* ================= NAVIGATION ================= */
 let tab = 'home';
@@ -764,7 +768,7 @@ function afterNote(r){
 
 /* ----- Einstellungen ----- */
 const isIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-const isStandalone = () => (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+const isStandalone = () => NATIVE || (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
 let deferredInstall = null, storagePersisted = null;
 function backupInfo(){
   if(!P.last_backup) return hasUserData() ? '<span style="color:var(--error)">Noch kein Backup erstellt.</span>' : '<span class="muted">Noch kein Backup erstellt.</span>';
@@ -782,10 +786,7 @@ function settingsView(){
     <div style="height:16px"></div><button class="btn tonal" style="width:100%;border-radius:12px" data-a="newplan">${ic('add')} Neuen Leseplan erstellen (.csv)</button></div>
   <div class="card"><h3>Bibel-Übersetzung</h3><div class="sub">Standard-Übersetzung für YouVersion / bible.com</div><div style="height:12px"></div>
     ${TRANSLATIONS.map(([id,n]) => radio(tid===id, esc(n), 'settr" data-id="'+id+'" data-n="'+esc(n))).join('')}</div>
-  <div class="card"><div class="row">${ic('bell',24,'prim')}<h3>Tägliche Erinnerung</h3></div><div class="sub">Trägt einen täglichen Termin mit Erinnerung in deinen Handy-Kalender ein. Deine Daten bleiben trotzdem nur in der App.</div><div style="height:12px"></div>
-    <div class="row"><span style="flex:1">Uhrzeit</span><input type="time" id="remTime" value="${pad(P.morning_hour ?? 8)}:${pad(P.morning_minute ?? 0)}" class="inp" style="width:150px;padding:10px 12px;border-radius:12px"></div>
-    <div style="height:12px"></div><button class="btn tonal" style="width:100%;border-radius:12px" data-a="ics">${ic('cal')} Zum Kalender hinzufügen</button>
-    <div class="small muted" style="margin-top:8px;line-height:1.5">iPhone: „Hinzufügen“ bestätigen. Android: die Datei mit deiner Kalender-App öffnen. Zum Ändern der Uhrzeit den alten Termin im Kalender löschen und neu hinzufügen.</div></div>
+  ${notifCard()}
   <div class="card"><h3>Daten &amp; Backup</h3><div class="sub">Deine Daten liegen nur auf diesem Gerät. Sichere sie regelmäßig, z. B. in Google Drive oder iCloud Drive. Gleiches CSV-Format wie die Android-App („CSV Export“) – so kannst du Daten zwischen beiden übertragen.</div><div style="height:12px"></div>
     <div class="small" style="margin-bottom:12px;line-height:1.6">${backupInfo()}</div>
     <div style="display:flex;flex-direction:column;gap:8px">
@@ -793,13 +794,13 @@ function settingsView(){
       <button class="btn tonal" style="border-radius:12px" data-a="csvimport">${ic('upload')} Backup / CSV importieren</button>
       <button class="btn tonal" style="border-radius:12px" data-a="pdf">${ic('print')} Jahresübersicht als PDF</button>
     </div></div>
-  <div class="card"><div class="row">${ic('phone',24,'prim')}<h3>Als App installieren</h3></div><div style="height:8px"></div>
+  ${NATIVE ? '' : `<div class="card"><div class="row">${ic('phone',24,'prim')}<h3>Als App installieren</h3></div><div style="height:8px"></div>
     ${isStandalone() ? '<div class="small" style="color:var(--primary)">✓ Flächenlese läuft als installierte App.</div>' : `${deferredInstall ? `<button class="btn" style="width:100%;border-radius:12px;margin-bottom:10px" data-a="install">${ic('download')} Jetzt installieren</button>` : ''}<div class="small muted" style="line-height:1.6"><b>Android (Chrome):</b> Menü ⋮ → „App installieren“ bzw. „Zum Startbildschirm hinzufügen“.<br><b>iPhone (Safari):</b> Teilen-Symbol → „Zum Home-Bildschirm“.<br>${isIOS() ? '<b style="color:var(--error)">Wichtig am iPhone:</b> Safari und die Home-Bildschirm-App haben getrennte Speicher. Nutze nur noch die App vom Home-Bildschirm.' : 'Danach startet Flächenlese wie eine normale App, auch offline.'}</div>`}
-    <div class="small muted" style="margin-top:10px">Dauerhafter Speicher: ${storagePersisted === true ? '<span style="color:var(--primary)">aktiv ✓</span>' : storagePersisted === false ? 'nicht bestätigt (nach der Installation meist aktiv)' : 'unbekannt'}</div></div>
+    <div class="small muted" style="margin-top:10px">Dauerhafter Speicher: ${storagePersisted === true ? '<span style="color:var(--primary)">aktiv ✓</span>' : storagePersisted === false ? 'nicht bestätigt (nach der Installation meist aktiv)' : 'unbekannt'}</div></div>`}
   ${themeCard()}
   <div class="card"><h3>Alle Daten löschen</h3><div class="sub">Lesefortschritt, Notizen und eigene Pläne auf diesem Gerät entfernen.</div><div style="height:12px"></div>
     <button class="btn" style="background:var(--error);color:var(--onerror);border-radius:12px;width:100%" data-a="reset">${ic('del')} Daten zurücksetzen</button></div>
-  <div class="center small muted" style="padding:8px 0 16px">Flächenlese Web · Version 1.6</div></div>`;
+  <div class="center small muted" style="padding:8px 0 16px">Flächenlese Web · Version 1.7</div></div>`;
 }
 
 /* ================= DIALOGE ================= */
@@ -1043,6 +1044,7 @@ function buildPrint(year){
 async function exportPdf(){
   const y = today().y; const content = buildPrint(y);
   const inArtifact = !!(window.claude && typeof window.claude.use === 'function');
+  if(NATIVE){ $('#print').innerHTML = content; setTimeout(() => { try{ window.FLApp.print(); }catch(e){ toast('Drucken nicht möglich'); } }, 100); return; }
   if(!inArtifact){ $('#print').innerHTML = content; setTimeout(() => { try{ window.print(); }catch(e){ toast('Drucken nicht möglich'); } }, 50); return; }
   const css = [...document.querySelectorAll('style')].map(s => s.textContent).join('\n').match(/\.pw[\s\S]*?(?=\n<\/style>|$)/);
   const doc = `<!DOCTYPE html><html lang="de"><head><meta charset="utf-8"><title>Flächenlese ${y}</title><style>body{margin:16px}.pw{page-break-after:always;font-family:Roboto,Arial,sans-serif;padding:8px;margin-bottom:24px}.pw h2{margin:0 0 4px;font-size:22px;display:flex;justify-content:space-between}.pw h2 span{font-size:14px;color:#777;font-weight:400}.pw table{width:100%;border-collapse:collapse;font-size:10px}.pw th{background:#003D29;color:#fff;text-align:left;padding:6px;-webkit-print-color-adjust:exact;print-color-adjust:exact}.pw td{border:1px solid #ccc;padding:6px;vertical-align:top;white-space:pre-line}.pw .wv{margin-top:10px;border:1px solid #003D29;border-radius:6px;padding:10px;font-size:11px}</style></head><body onload="setTimeout(()=>print(),300)">${content}</body></html>`;
@@ -1070,6 +1072,7 @@ const ACT = {
   wshare(el){
     const a = dateOf(el), r = getN('wr',a), v = getN('wv',a), n = weeklyNote(a);
     let t = `Wochenvers: ${r}\n`; if(v) t += v + '\n'; if(n) t += `\nNotiz:\n${n}`; t = t.trim();
+    if(NATIVE){ try{ window.FLApp.share(t); return; }catch(e){} }
     if(navigator.share){ navigator.share({text:t}).catch(() => copyText(t)); } else copyText(t);
   },
   yvpick(el){ yvPick(el.dataset.ref); },
@@ -1112,6 +1115,7 @@ const ACT = {
   csvimport(){ const f = $('#fileBackup'); f.value = ''; f.click(); },
   pdf(){ exportPdf(); },
   ics(){ makeIcs(); },
+  notif(){ notifDialog(); },
   settheme(el){ P.theme = el.dataset.id; save(); applyTheme(); render(true); },
   themenew(){ themeEditor(null); },
   themeedit(){ const t = customThemes().find(x => x.id === P.theme); if(t) themeEditor(t); },
@@ -1151,6 +1155,67 @@ $('#fileBackup').addEventListener('change', async e => {
   dialog('Backup importieren', `<div>${rows.length} Zeilen gefunden. Sollen deine bisherigen Daten auf diesem Gerät vorher gelöscht werden?</div>`,
     [{label:'Abbrechen'},{label:'Zusammenführen', onClick: () => run(false)},{label:'Ersetzen', filled:true, onClick: () => run(true)}]);
 });
+
+/* ================= BENACHRICHTIGUNGEN ================= */
+const notifPlans = () => (P.notification_plan_ids && P.notification_plan_ids.length) ? P.notification_plan_ids : ['LARGE'];
+const allPlanIds = () => ['LARGE','SMALL', ...customIds().map(id => 'CUSTOM_'+id)];
+function notifCard(){
+  if(NATIVE){
+    const on = !!(P.morning_enabled || P.evening_enabled);
+    return `<button class="card" style="width:100%;text-align:left;display:flex;align-items:center;gap:16px" data-a="notif">${ic('bell',24,'prim')}<div style="flex:1"><h3>Benachrichtigungseinstellungen</h3><div class="sub">${on ? `Aktiviert · ${pad(P.morning_hour ?? 8)}:${pad(P.morning_minute ?? 0)} und ${pad(P.evening_hour ?? 20)}:${pad(P.evening_minute ?? 0)} Uhr` : 'Deaktiviert'}</div></div>${ic('fwd',20,'muted')}</button>`;
+  }
+  if(isIOS()) return '';
+  return `<div class="card"><div class="row">${ic('bell',24,'prim')}<h3>Benachrichtigungen</h3></div><div class="sub" style="margin:6px 0 12px;line-height:1.5">Erinnerungen an deine tägliche Lesung gibt es in der Android-App. Sie nutzt diese Web-App, deine Daten bleiben gleich – zusätzlich gibt es Benachrichtigungen und ein Widget.</div>
+    <a class="btn tonal" style="width:100%;border-radius:12px" href="${'https://github.com/littlestrunziii2/flaechenlese/releases/latest/download/Flaechenlese.apk'}">${ic('download')} Android-App herunterladen</a></div>`;
+}
+function notifDialog(){
+  let on = !!(P.morning_enabled || P.evening_enabled), plans = new Set(notifPlans());
+  const t = (h,m) => `${pad(h)}:${pad(m)}`;
+  const ov = dialog('Benachrichtigungen', `
+    <button class="radio" id="nOn" style="justify-content:space-between"><b style="color:var(--on)">Benachrichtigungen aktivieren</b><span class="chk ${on?'on':''}">${on?ic('check'):''}</span></button>
+    <hr><div style="font-size:14px;font-weight:500;color:var(--primary)">Zeitpunkte</div>
+    <div class="crow"><label for="nM">Morgen-Benachrichtigung</label><input type="time" id="nM" class="inp" style="width:120px;padding:8px 10px;border-radius:12px" value="${t(P.morning_hour ?? 8, P.morning_minute ?? 0)}"></div>
+    <div class="crow"><label for="nE">Abend-Benachrichtigung</label><input type="time" id="nE" class="inp" style="width:120px;padding:8px 10px;border-radius:12px" value="${t(P.evening_hour ?? 20, P.evening_minute ?? 0)}"></div>
+    <hr><div style="font-size:14px;font-weight:500;color:var(--primary)">Für welche Lesepläne benachrichtigen?</div>
+    ${allPlanIds().map(id => `<button class="radio" data-np="${esc(id)}" style="justify-content:space-between;color:var(--on)"><span>${esc(planLabel(id))}</span><span class="chk ${plans.has(id)?'on':''}">${plans.has(id)?ic('check'):''}</span></button>`).join('')}
+    <div class="small muted" style="line-height:1.5">Du bekommst nur eine Benachrichtigung, wenn die heutige Lesung der gewählten Pläne noch nicht als gelesen markiert ist.</div>
+    <button class="tbtn" id="nTest" style="align-self:flex-start;padding-left:0">Test-Benachrichtigung senden</button>`,
+    [{label:'Abbrechen'},{label:'Speichern', filled:true, onClick: o => {
+      const [mh,mm] = o.querySelector('#nM').value.split(':').map(Number), [eh,em] = o.querySelector('#nE').value.split(':').map(Number);
+      Object.assign(P, {morning_enabled:on, evening_enabled:on, morning_hour:mh||0, morning_minute:mm||0, evening_hour:eh||0, evening_minute:em||0, notification_plan_ids:[...plans]});
+      save(); render(true); toast(on ? 'Benachrichtigungen aktiviert' : 'Benachrichtigungen aus');
+    }}]);
+  ov.querySelector('.body').style.gap = '10px';
+  const setChk = (c, v) => { c.classList.toggle('on', v); c.innerHTML = v ? ic('check') : ''; };
+  ov.querySelector('#nOn').onclick = () => { on = !on; setChk(ov.querySelector('#nOn .chk'), on); if(on){ try{ window.FLApp.requestNotificationPermission(); }catch(e){} } };
+  ov.querySelectorAll('[data-np]').forEach(b => b.onclick = () => { const id = b.dataset.np; if(plans.has(id)) plans.delete(id); else plans.add(id); if(!plans.size) plans.add(id); setChk(b.querySelector('.chk'), plans.has(id)); });
+  ov.querySelector('#nTest').onclick = () => { try{ window.FLApp.requestNotificationPermission(); window.FLApp.testNotification(JSON.stringify([...plans])); toast('Test gesendet'); }catch(e){ toast('Nicht möglich'); } };
+}
+/* Datenaustausch mit der Android-App (Widget + Benachrichtigungen) */
+let nativeTimer = null;
+function scheduleNativeSync(){ if(!NATIVE) return; clearTimeout(nativeTimer); nativeTimer = setTimeout(nativeSync, 300); }
+function nativeSync(){
+  if(!NATIVE) return;
+  try{
+    const t0 = today(), plans = {};
+    for(const id of allPlanIds()){
+      const days = {};
+      for(let i=-2; i<=60; i++){ const a = addDays(t0, i); let p = planPassage(a, id); if(['Plan beendet','Kein Eintrag','Kein Plan geladen'].includes(p)){ const r = getN('r', a, id); if(r.trim()) p = r; } days[iso(a)] = {p: splitPassages(p).join('\n'), r: isRead(a, id)}; }
+      plans[id] = {name: planLabel(id), days};
+    }
+    window.FLApp.sync(JSON.stringify({v:1, active: planType(), activeName: planName(planType()), notif:{enabled: !!(P.morning_enabled || P.evening_enabled), mh: P.morning_hour ?? 8, mm: P.morning_minute ?? 0, eh: P.evening_hour ?? 20, em: P.evening_minute ?? 0, plans: notifPlans()}, plans}));
+  }catch(e){}
+}
+function applyNativeToggles(){
+  if(!NATIVE) return false;
+  try{
+    const list = JSON.parse(window.FLApp.takePendingToggles() || '[]');
+    for(const x of list){ const a = parseIso(x.date); const k = readKey(x.plan), s2 = getSet(k), v = iso(a); if(x.read) s2.add(v); else s2.delete(v); putSet(k, s2); }
+    if(list.length){ save(); return true; }
+  }catch(e){}
+  return false;
+}
+window.flNativeResume = () => { const changed = applyNativeToggles(); if(changed || iso(today()) !== lastDay){ lastDay = iso(today()); render(true); } nativeSync(); };
 
 /* ================= KALENDER-ERINNERUNG (.ics) ================= */
 function makeIcs(){
@@ -1205,6 +1270,7 @@ load();
 migrateTheme();
 applyTheme();
 setupPullToRefresh();
+if(NATIVE){ applyNativeToggles(); render(); nativeSync(); }
 // Tageswechsel: beim Zurückkehren in die App "Heute" aktualisieren
 let lastDay = iso(today());
 document.addEventListener('visibilitychange', () => { if(!document.hidden && iso(today()) !== lastDay){ lastDay = iso(today()); if(!stack.length) render(true); } });

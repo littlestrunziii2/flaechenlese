@@ -1,0 +1,58 @@
+name: Android-App bauen
+
+on:
+  push:
+    branches: [main]
+    paths: ['android/**', '.github/workflows/android.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Signaturschlüssel prüfen
+        env:
+          KS: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+          PW: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          if [ -z "$KS" ] || [ -z "$PW" ]; then
+            echo "::warning::Secrets ANDROID_KEYSTORE_B64 / ANDROID_KEYSTORE_PASSWORD fehlen - es wird nur ein Testbau erstellt, nichts veroeffentlicht."
+            echo "HAS_KEY=false" >> "$GITHUB_ENV"
+          else
+            echo "$KS" | base64 -d > "$RUNNER_TEMP/release.jks"
+            echo "KEYSTORE_FILE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+            echo "HAS_KEY=true" >> "$GITHUB_ENV"
+          fi
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+
+      - name: APK bauen
+        working-directory: android
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: flaechenlese
+        run: gradle assembleRelease -PversionCode=${{ github.run_number }} -PversionName=1.${{ github.run_number }} --no-daemon --stacktrace
+
+      - name: Als Download veröffentlichen
+        if: env.HAS_KEY == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp android/app/build/outputs/apk/release/app-release.apk Flaechenlese.apk
+          gh release create "android-v${{ github.run_number }}" Flaechenlese.apk \
+            --title "Flächenlese Android 1.${{ github.run_number }}" \
+            --notes "Android-App mit Benachrichtigungen und Widget. Nutzt die Web-App https://littlestrunziii2.github.io/flaechenlese/" \
+            --latest
