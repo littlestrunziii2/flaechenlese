@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Flächenlese</title>
+<meta name="theme-color" content="#0f1512">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Flächenlese">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<style>
+:root{
+  --bg:#0f1512;--surface:#0f1512;--sc-low:#171d1a;--sc:#1b211e;--sc-high:#252b28;
+  --sv:#404944;--on:#dfe4df;--onsv:#bfc9c2;
+  --primary:#8bd5b0;--onprimary:#003825;--pc:#005138;--onpc:#a6f2cb;
+  --secondary:#b3ccbe;--onsecondary:#1e352a;--secc:#354b40;--onsecc:#cfe9d9;
+  --outline:#89938c;--ov:#404944;--error:#ffb4ab;--icongreen:#003D29;
+  --ovbg:#121212;--ovsurf:#1E1E1E;--ovborder:#333333;
+  --safe-t:env(safe-area-inset-top,0px);--safe-b:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--on);font-family:Roboto,"Segoe UI",system-ui,-apple-system,Helvetica,Arial,sans-serif;overscroll-behavior:none}
+body{display:flex;flex-direction:column;height:100dvh;overflow:hidden;-webkit-user-select:none;user-select:none}
+input,textarea,.selectable{-webkit-user-select:text;user-select:text}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer;touch-action:manipulation}
+a{color:inherit;text-decoration:none}
+svg.i{width:24px;height:24px;fill:currentColor;flex:none}
+#screen{flex:1;overflow-y:auto;overflow-x:hidden;position:relative;-webkit-overflow-scrolling:touch}
+/* Navigation */
+nav{display:flex;background:var(--sc);padding:12px 0 calc(12px + var(--safe-b));flex:none}
+nav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--onsv);font-size:10px;font-weight:500;min-width:0}
+nav .pill{width:56px;height:32px;border-radius:16px;display:flex;align-items:center;justify-content:center;transition:background .2s}
+nav button.sel{color:var(--on)}
+nav button.sel .pill{background:var(--secc);color:var(--onsecc)}
+nav span.l{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+/* Pager */
+.pager{position:relative;min-height:100%;touch-action:pan-y;overflow:hidden}
+.page{min-height:100%;will-change:transform}
+.navarrow{display:none}
+@media (hover:hover) and (pointer:fine){
+  .navarrow{display:flex;position:absolute;top:50%;transform:translateY(-50%);z-index:3;width:36px;height:36px;border-radius:18px;align-items:center;justify-content:center;background:var(--sc-high);opacity:.55}
+  .navarrow:hover{opacity:1}
+  .navarrow.l{left:6px}.navarrow.r{right:6px}
+}
+/* Day */
+.grad{background:linear-gradient(to bottom, rgba(0,81,56,.3), var(--surface) 100%);min-height:100%}
+.daywrap{display:flex;flex-direction:column;align-items:center;gap:24px;padding:calc(32px + var(--safe-t)) 24px 24px}
+.chip{display:inline-flex;align-items:center;gap:4px;background:rgba(139,213,176,.1);color:var(--primary);border-radius:999px;padding:6px 12px 6px 16px;font-size:11px;font-weight:700;letter-spacing:.5px;margin-bottom:8px}
+.chip svg{width:16px;height:16px}
+.center{display:flex;flex-direction:column;align-items:center;text-align:center}
+.wd{font-size:12px;font-weight:500;color:var(--primary);letter-spacing:2px}
+.dt{font-size:24px;font-weight:300;line-height:32px}
+.passage{width:100%;padding:16px 0}
+.passage .lbl{font-size:16px;font-weight:500;color:var(--onsv);margin:16px 0 12px}
+.pass{display:block;font-size:24px;font-weight:700;line-height:38px;padding:4px 16px;border-radius:12px;text-align:center;white-space:pre-line}
+.pass:active{background:rgba(255,255,255,.08)}
+.prim{color:var(--primary)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--primary);color:var(--onprimary);border-radius:16px;height:48px;padding:0 24px;font-size:14px;font-weight:500;letter-spacing:.1px}
+.btn.big{width:80%;height:56px}
+.btn.sec{background:var(--secondary);color:var(--onsecondary)}
+.btn.tonal{background:var(--secc);color:var(--onsecc)}
+.btn.full{width:100%;height:56px;font-weight:700}
+.btn svg{width:20px;height:20px}
+.btn:disabled{opacity:.38}
+.obtn{display:inline-flex;align-items:center;justify-content:center;gap:12px;height:48px;padding:0 24px;border-radius:16px;border:1px solid var(--outline);color:var(--onsv);font-size:14px;font-weight:500}
+.obtn.has{background:rgba(0,81,56,.2);color:var(--primary)}
+.obtn.secc{color:var(--secondary)}
+.row{display:flex;align-items:center;gap:8px;width:100%}
+.flex1{flex:1;min-width:0}
+.flex1 .t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:700}
+.ibtn{width:48px;height:48px;border-radius:24px;display:inline-flex;align-items:center;justify-content:center;color:var(--primary)}
+.ibtn.tonalbg{background:var(--secc);color:var(--onsecc);border-radius:16px}
+.ibtn.sm{width:40px;height:40px}
+.backbtn{position:absolute;top:calc(8px + var(--safe-t));left:8px;z-index:4;width:48px;height:48px;border-radius:24px;display:flex;align-items:center;justify-content:center;color:var(--on)}
+/* Calendar */
+.tabs{display:flex;overflow-x:auto;scrollbar-width:none;background:var(--surface);padding:var(--safe-t) 16px 0;position:sticky;top:0;z-index:2;border-bottom:1px solid var(--sc-high)}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{flex:none;padding:14px 16px;font-size:14px;font-weight:500;color:var(--onsv);border-bottom:3px solid transparent;white-space:nowrap}
+.tabs button.sel{color:var(--primary);border-bottom-color:var(--primary)}
+.calTitle{text-align:center;font-size:28px;font-weight:700;color:var(--primary);padding:16px 0}
+.cal{padding:0 16px 24px}
+.wdh{display:grid;grid-template-columns:repeat(7,1fr);padding-bottom:8px}
+.wdh div{text-align:center;font-size:11px;font-weight:700;color:rgba(139,213,176,.5)}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
+.cell{aspect-ratio:1;border-radius:50%;background:var(--sv);color:var(--onsv);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:16px;position:relative}
+.cell.read{background:var(--pc);color:var(--onpc);font-weight:700}
+.cell.today{background:#fff;color:var(--icongreen);font-weight:700;box-shadow:inset 0 0 0 3px var(--icongreen)}
+.cell .nd{display:inline-block;width:6px;height:6px;border-radius:3px;background:var(--secondary);margin-left:2px;vertical-align:middle}
+.cell .rd{width:4px;height:4px;border-radius:2px;background:var(--primary)}
+.cell.today .rd{background:var(--icongreen)}
+/* Overview */
+.ov-wrap{background:var(--ovbg);min-height:100%;display:flex;flex-direction:column}
+.ovtabs{display:flex;background:var(--ovsurf);padding-top:var(--safe-t);position:sticky;top:0;z-index:2}
+.ovtabs button{flex:1;height:48px;color:#9e9e9e;font-size:14px;border-bottom:3px solid transparent}
+.ovtabs button.sel{color:var(--primary);font-weight:700;border-bottom-color:var(--primary)}
+.ovpage{padding:0 8px 20px;background:var(--ovbg)}
+.ovhead{display:flex;justify-content:center;align-items:center;gap:12px;padding:8px 0 4px;color:#fff}
+.tbl{border:1px solid var(--ovborder);border-radius:12px;overflow:hidden;background:var(--ovsurf)}
+.tr{display:flex;border-top:.5px solid var(--ovborder)}
+.tr:first-child{border-top:0}
+.th{font-size:10px;font-weight:700;color:var(--primary);letter-spacing:1px;text-align:center;padding:10px 0}
+.tc{padding:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;border-left:.5px solid var(--ovborder);min-width:0}
+.tc:first-child{border-left:0}
+.clamp{display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden}
+.wvrow{padding:12px;display:flex;flex-direction:column;align-items:center;text-align:center;border-top:.5px solid var(--ovborder)}
+/* Lists, cards */
+.page-pad{padding:calc(16px + var(--safe-t)) 16px 32px}
+h1{font-size:28px;font-weight:700;margin:0 0 24px}
+.card{background:rgba(64,73,68,.5);border-radius:12px;padding:16px;margin-bottom:16px}
+.card h3{margin:0;font-size:16px;font-weight:700}
+.card .sub{font-size:12px;color:var(--onsv);margin-top:2px}
+.radio{display:flex;align-items:center;gap:12px;padding:8px 0;width:100%;text-align:left;font-size:16px}
+.rdot{width:20px;height:20px;border-radius:10px;border:2px solid var(--onsv);flex:none;position:relative}
+.rdot.on{border-color:var(--primary)}
+.rdot.on::after{content:"";position:absolute;inset:3px;border-radius:50%;background:var(--primary)}
+.chk{width:18px;height:18px;border-radius:2px;border:2px solid var(--onsv);flex:none;display:flex;align-items:center;justify-content:center}
+.chk.on{background:var(--primary);border-color:var(--primary);color:var(--onprimary)}
+.chk svg{width:16px;height:16px}
+.muted{color:var(--onsv)}
+.small{font-size:12px}
+.topbar{display:flex;align-items:center;padding:calc(8px + var(--safe-t)) 4px 8px;gap:4px}
+.topbar .ttl{flex:1;text-align:center;display:flex;flex-direction:column;align-items:center}
+.fld{position:relative;width:100%}
+.fld label{position:absolute;left:12px;top:-8px;background:var(--surface);padding:0 4px;font-size:12px;color:var(--onsv)}
+.fld input,.fld textarea,.inp{width:100%;background:transparent;border:1px solid var(--outline);border-radius:16px;color:var(--on);font:inherit;font-size:16px;padding:16px;outline:none;resize:vertical}
+.fld input:focus,.fld textarea:focus,.inp:focus{border:2px solid var(--primary);padding:15px}
+.fld .clr{position:absolute;right:4px;top:6px;display:flex}
+.fld .clr button{width:40px;height:40px;display:flex;align-items:center;justify-content:center}
+.fld .clr svg{width:18px;height:18px}
+.ncard{background:var(--sc-low);border-radius:24px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.4)}
+.ncard .k{font-size:12px;font-weight:500;color:var(--primary);letter-spacing:.5px}
+.fchips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.fchip{flex:none;height:32px;padding:0 16px;border-radius:8px;border:1px solid var(--outline);font-size:14px;color:var(--onsv);display:flex;align-items:center;gap:6px}
+.fchip.sel{background:var(--secc);border-color:transparent;color:var(--onsecc)}
+.res{background:var(--sc-low);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:8px;width:100%;text-align:left}
+.badge{background:var(--pc);color:var(--onpc);border-radius:8px;font-size:11px;padding:2px 8px}
+.searchbox{display:flex;align-items:center;border:1px solid var(--outline);border-radius:12px;padding:0 4px 0 12px;gap:8px}
+.searchbox input{flex:1;background:none;border:0;color:var(--on);font:inherit;font-size:16px;padding:16px 0;outline:none;min-width:0}
+/* Dialog */
+.ovl{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:50;padding:24px;animation:fade .15s}
+@keyframes fade{from{opacity:0}}
+.dlg{background:var(--sc-high);border-radius:28px;padding:24px;width:100%;max-width:420px;max-height:86vh;display:flex;flex-direction:column;-webkit-user-select:text;user-select:text}
+.dlg .dt2{font-size:24px;line-height:32px;margin-bottom:16px;font-weight:400}
+.dlg .body{overflow-y:auto;display:flex;flex-direction:column;gap:16px;color:var(--onsv);font-size:14px;margin:0 -4px;padding:0 4px}
+.dlg .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:24px;flex-wrap:wrap}
+.tbtn{color:var(--primary);font-size:14px;font-weight:500;padding:10px 12px;border-radius:20px}
+.fbtn{background:var(--primary);color:var(--onprimary);font-size:14px;font-weight:500;padding:10px 24px;border-radius:20px}
+.ocard{border:1px solid var(--ov);border-radius:12px;padding:12px;text-align:left;width:100%;color:var(--on)}
+.ocard.sel{background:rgba(0,81,56,.3)}
+.popt{display:flex;align-items:center;gap:12px;border:1px solid var(--ov);border-radius:12px;padding:12px;width:100%;text-align:left;color:var(--on);font-size:16px}
+.popt.sel{background:var(--pc);border-color:transparent;font-weight:700}
+.popt .hs{width:32px;height:32px;display:flex;align-items:center;justify-content:center;color:rgba(158,158,158,.3)}
+.popt .hs.on{color:var(--primary)}
+.popt .hs svg{width:20px;height:20px}
+hr{border:0;border-top:1px solid var(--ov);margin:0;width:100%}
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(100px + var(--safe-b));background:#e0e4df;color:#2d322f;padding:14px 16px;border-radius:4px;font-size:14px;max-width:90%;z-index:60;box-shadow:0 3px 8px rgba(0,0,0,.4);opacity:0;pointer-events:none;transition:opacity .2s}
+#toast.on{opacity:1}
+.hint{background:var(--secc);color:var(--onsecc);border-radius:12px;padding:12px 14px;font-size:13px;line-height:1.45}
+#print{display:none}
+@media print{
+  body{display:block;height:auto;overflow:visible;background:#fff;color:#000}
+  body>*:not(#print){display:none!important}
+  #print{display:block}
+}
+.pw{page-break-after:always;font-family:Roboto,Arial,sans-serif;color:#000;padding:8px}
+.pw h2{margin:0 0 4px;font-size:22px;display:flex;justify-content:space-between}
+.pw h2 span{font-size:14px;color:#777;font-weight:400}
+.pw table{width:100%;border-collapse:collapse;font-size:10px}
+.pw th{background:#003D29;color:#fff;text-align:left;padding:6px}
+.pw td{border:1px solid #ccc;padding:6px;vertical-align:top;white-space:pre-line}
+.pw .wv{margin-top:10px;border:1px solid #003D29;border-radius:6px;padding:10px;font-size:11px}
+</style>
+</head>
+<body>
+<div id="screen"></div>
+<nav id="nav"></nav>
+<div id="toast"></div>
+<div id="print"></div>
+<input type="file" id="fileCsvPlan" accept=".csv,.txt,text/csv,text/plain" hidden>
+<input type="file" id="fileBackup" accept=".csv,text/csv,text/plain" hidden>
+<script>
+"use strict";
+/* ================= DATEN: Lesepläne (1:1 aus ReadingPlan.kt) ================= */
+const PLANS = {"L": {"1": ["1. Mose 1", "1. Mose 2-3", "1. Mose 4-6", "1. Mose 7-9", "1. Mose 10-12", "1. Mose 13-15", "1. Mose 16-18", "1. Mose 19-21", "1. Mose 22-24", "1. Mose 25-27", "1. Mose 28-30", "1. Mose 31-32", "1. Mose 33-35", "1. Mose 36-38", "1. Mose 39-42", "1. Mose 43-45", "1. Mose 46-48", "1. Mose 49-50", "2. Mose 1-4", "2. Mose 5-7", "2. Mose 8-11", "2. Mose 12-14", "2. Mose 15-17", "2. Mose 18-20", "2. Mose 21-23", "2. Mose 24-26", "2. Mose 27-28", "2. Mose 29-30", "2. Mose 31-33", "2. Mose 34-37", "2. Mose 38-40"], "2": ["3. Mose 1-4", "3. Mose 5-7", "3. Mose 8-10", "3. Mose 11-13", "3. Mose 14-16", "3. Mose 17-19", "3. Mose 20-22", "3. Mose 23-24", "3. Mose 25-27", "4. Mose 1-2", "4. Mose 3-4", "4. Mose 5-7", "4. Mose 8-11", "4. Mose 12-14", "4. Mose 15-17", "4. Mose 18-20", "4. Mose 21-23", "4. Mose 24-26", "4. Mose 27-30", "4. Mose 31-33", "4. Mose 34-36", "5. Mose 1-2", "5. Mose 3-5", "5. Mose 6-9", "5. Mose 10-13", "5. Mose 14-17", "5. Mose 18-21", "5. Mose 22-26"], "3": ["5. Mose 27-28", "5. Mose 29-31", "5. Mose 32-34", "Josua 1-3", "Josua 4-7", "Josua 8-10", "Josua 11-13", "Josua 14-17", "Josua 18-21", "Josua 22-24", "Richter 1-3", "Richter 4-6", "Richter 7-8", "Richter 9-11", "Richter 12-15", "Richter 16-18", "Richter 19-21", "Ruth 1-4", "1. Samuel 1-3", "1. Samuel 4-7", "1. Samuel 8-11", "1. Samuel 12-14", "1. Samuel 15-17", "1. Samuel 18-20", "1. Samuel 21-24", "1. Samuel 25-28", "1. Samuel 29-31 /\n2. Samuel 1", "2. Samuel 2-4", "2. Samuel 5-8", "2. Samuel 9-12", "2. Samuel 13-15"], "4": ["2. Samuel 16-18", "2. Samuel 19-21", "2. Samuel 22-24", "1. Könige 1-2", "1. Könige 3-5", "1. Könige 6-7", "1. Könige 8-10", "1. Könige 11-12", "1. Könige 13-15", "1. Könige 16-18", "1. Könige 19-21", "1. Könige 22 /\n2. Könige 1", "2. Könige 2-4", "2. Könige 5-7", "2. Könige 8-10", "2. Könige 11-13", "2. Könige 14-16", "2. Könige 17-18", "2. Könige 19-22", "2. Könige 23-25", "1. Chronik 1-2", "1. Chronik 3-5", "1. Chronik 6-9", "1. Chronik 10-12", "1. Chronik 13-16", "1. Chronik 17-21", "1. Chronik 22-25", "1. Chronik 26-28", "1. Chronik 29 /\n2. Chronik 1-3", "2. Chronik 4-7"], "5": ["2. Chronik 8-11", "2. Chronik 12-16", "2. Chronik 17-20", "2. Chronik 21-24", "2. Chronik 25-28", "2. Chronik 29-31", "2. Chronik 32-33", "2. Chronik 34-36", "Esra 1-3", "Esra 4-7", "Esra 8-10", "Nehemia 1-4", "Nehemia 5-7", "Nehemia 8-10", "Nehemia 11-13", "Esther 1-4", "Esther 5-10", "Hiob 1-3", "Hiob 4-9", "Hiob 10-15", "Hiob 16-21", "Hiob 22-29", "Hiob 30-34", "Hiob 35-39", "Hiob 40-42 / Psalm 1-2", "Psalm 3-13", "Psalm 14-21", "Psalm 22-31", "Psalm 32-37", "Psalm 38-46", "Psalm 47-55"], "6": ["Psalm 56-67", "Psalm 68-72", "Psalm 73-79", "Psalm 80-89", "Psalm 90-99", "Psalm 100-105", "Psalm 106-112", "Psalm 113-119:64", "Psalm 119:65-127", "Psalm 128-141", "Psalm 142-150", "Sprüche 1-7", "Sprüche 8-12", "Sprüche 13-18", "Sprüche 19-23", "Sprüche 24-28", "Sprüche 29-31 / Prediger 1-2", "Prediger 3-8", "Prediger 9-12", "Hohelied 1-8", "Jesaja 1-5", "Jesaja 6-9", "Jesaja 10-14", "Jesaja 15-21", "Jesaja 22-27", "Jesaja 28-31", "Jesaja 32-36", "Jesaja 37-39", "Jesaja 40-43", "Jesaja 44-47"], "7": ["Jesaja 48-52", "Jesaja 53-57", "Jesaja 58-63", "Jesaja 64-66", "Jeremia 1-3", "Jeremia 4-6", "Jeremia 7-10", "Jeremia 11-14", "Jeremia 15-18", "Jeremia 19-22", "Jeremia 23-25", "Jeremia 26-29", "Jeremia 30-32", "Jeremia 33-35", "Jeremia 36-38", "Jeremia 39-43", "Jeremia 44-47", "Jeremia 48-50", "Jeremia 51-52", "Klagelieder 1-2", "Klagelieder 3-5", "Hesekiel 1-5", "Hesekiel 6-9", "Hesekiel 10-13", "Hesekiel 14-16", "Hesekiel 17-20", "Hesekiel 21-22", "Hesekiel 23-26", "Hesekiel 27-29", "Hesekiel 30-33", "Hesekiel 34-36"], "8": ["Hesekiel 37-39", "Hesekiel 40-42", "Hesekiel 43-46", "Hesekiel 47-48", "Daniel 1-2", "Daniel 3-4", "Daniel 5-7", "Daniel 8-9", "Daniel 10-12", "Hosea 1-4", "Hosea 5-9", "Hosea 10-14", "Joel 1-4", "Amos 1-5", "Amos 6-9 /\nObadja 1", "Jona 1-4", "Micha 1-5", "Micha 6-7 /\nNahum 1-3", "Habakuk 1-3", "Zephanja 1-3", "Haggai 1-2", "Sacharja 1-5", "Sacharja 6-9", "Sacharja 10-12", "Sacharja 13-14", "Maleachi 1-3", "Matthäus 1-2", "Matthäus 3-4", "Matthäus 5-6", "Matthäus 7-8", "Matthäus 9-10"], "9": ["Matthäus 11-12", "Matthäus 13-14", "Matthäus 15-16", "Matthäus 17-18", "Matthäus 19-20", "Matthäus 21-22", "Matthäus 23-24", "Matthäus 25-26", "Matthäus 27-28", "Markus 1-2", "Markus 3-4", "Markus 5-6", "Markus 7-9", "Markus 10-11", "Markus 12-13", "Markus 14-16", "Lukas 1", "Lukas 2-3", "Lukas 4-5", "Lukas 6", "Lukas 7-8", "Lukas 9", "Lukas 10", "Lukas 11-12", "Lukas 13-14", "Lukas 15-16", "Lukas 17-18", "Lukas 19", "Lukas 20-21", "Lukas 22"], "10": ["Lukas 23", "Lukas 24", "Johannes 1-2", "Johannes 3-4", "Johannes 5", "Johannes 6-7", "Johannes 8", "Johannes 9-10", "Johannes 11-12", "Johannes 13-14", "Johannes 15-16", "Johannes 17-18", "Johannes 19", "Johannes 20-21", "Apostelgeschichte 1", "Apostelgeschichte 2", "Apostelgeschichte 3", "Apostelgeschichte 4-5", "Apostelgeschichte 6-7", "Apostelgeschichte 8-9", "Apostelgeschichte 10", "Apostelgeschichte 11-12", "Apostelgeschichte 13-14", "Apostelgeschichte 15-16", "Apostelgeschichte 17", "Apostelgeschichte 18-19", "Apostelgeschichte 20-21", "Apostelgeschichte 22-23", "Apostelgeschichte 24-25", "Apostelgeschichte 26-28", "Römer 1-2"], "11": ["Römer 3-4", "Römer 5-6", "Römer 7-8", "Römer 9-10", "Römer 11-12", "Römer 13-14", "Römer 15-16", "1. Korinther 1-2", "1. Korinther 3-5", "1. Korinther 6-7", "1. Korinther 8-10", "1. Korinther 11-12", "1. Korinther 13-14", "1. Korinther 15-16", "2. Korinther 1-3", "2. Korinther 4-6", "2. Korinther 7-10", "2. Korinther 11-13", "Galater 1-2", "Galater 3-4", "Galater 5-6", "Epheser 1-2", "Epheser 3-4", "Epheser 5-6", "Philipper 1-2", "Philipper 3-4", "Kolosser 1-2", "Kolosser 3-4", "1. Thessalonicher 1-5", "2. Thessalonicher 1-3"], "12": ["1. Timotheus 1-3", "1. Timotheus 4-6", "2. Timotheus 1-4", "Titus 1-3", "Philemon 1", "Hebräer 1-3", "Hebräer 4-6", "Hebräer 7-9", "Hebräer 10-11", "Hebräer 12-13", "Jakobus 1", "Jakobus 2-3", "Jakobus 4-5", "1. Petrus 1-3", "1. Petrus 4-5", "2. Petrus 1-3", "1. Johannes 1-3", "1. Johannes 4-5", "2. Johannes 1 /\n3. Johannes 1", "Judas 1", "Offenbarung 1-2", "Offenbarung 3-4", "Offenbarung 5-6", "Offenbarung 7-8", "Offenbarung 9-10", "Offenbarung 11-12", "Offenbarung 13-14", "Offenbarung 15-16", "Offenbarung 17-18", "Offenbarung 19-20", "Offenbarung 21-22"]}, "S": {"1": ["1. Mose 1", "1. Mose 2", "1. Mose 3 / 4", "1. Mose 6 / 7", "1. Mose 8", "1. Mose 9", "1. Mose 11", "1. Mose 12", "1. Mose 15", "1. Mose 16", "1. Mose 17", "1. Mose 18", "1. Mose 19", "1. Mose 21", "1. Mose 22", "1. Mose 24", "1. Mose 25", "1. Mose 27", "1. Mose 28", "1. Mose 29", "1. Mose 30", "1. Mose 31", "1. Mose 32", "1. Mose 37", "1. Mose 39", "1. Mose 41", "1. Mose 42", "1. Mose 43", "1. Mose 44", "1. Mose 45 / 46", "1. Mose 49"], "2": ["2. Mose 1", "2. Mose 2", "2. Mose 3", "2. Mose 4", "2. Mose 5", "2. Mose 6", "2. Mose 7", "2. Mose 8", "2. Mose 9", "2. Mose 10", "2. Mose 11", "2. Mose 12", "2. Mose 13", "2. Mose 14", "2. Mose 15", "2. Mose 16", "2. Mose 17", "2. Mose 19", "2. Mose 20", "2. Mose 23", "2. Mose 40", "3. Mose 16", "4. Mose 11", "4. Mose 12", "4. Mose 13", "4. Mose 14", "5. Mose 1", "5. Mose 2", "5. Mose 4"], "3": ["5. Mose 5", "5. Mose 6", "5. Mose 31", "5. Mose 34", "Josua 1", "Josua 2", "Josua 3", "Josua 4", "Josua 5", "Josua 6", "Josua 7", "Josua 8", "Josua 11", "Josua 23", "Josua 24", "Richter 1", "Richter 2", "Richter 6", "Richter 7", "Richter 8", "Richter 19", "Rut 1", "Rut 2", "Rut 3", "Rut 4", "1. Samuel 1", "1. Samuel 2", "1. Samuel 3", "1. Samuel 4", "1. Samuel 6", "1. Samuel 7"], "4": ["1. Samuel 8", "1. Samuel 9", "1. Samuel 10", "1. Samuel 15", "1. Samuel 16", "1. Samuel 17", "1. Samuel 23", "1. Samuel 24", "1. Samuel 25", "1. Samuel 26", "1. Samuel 31", "2. Samuel 1", "2. Samuel 5", "2. Samuel 6", "2. Samuel 7", "2. Samuel 11", "2. Samuel 12", "2. Samuel 22", "2. Samuel 24", "1. Könige 1", "1. Könige 2", "1. Könige 3", "1. Könige 6", "1. Könige 8", "1. Könige 11", "1. Könige 12", "1. Könige 18", "1. Könige 19", "2. Könige 12", "2. Könige 17"], "5": ["2. Chronik 34", "2. Chronik 36", "Esra 1", "Esra 3", "Esra 5", "Esra 6", "Nehemia 1", "Nehemia 2", "Nehemia 9", "Ester 1", "Ester 2", "Ester 3", "Ester 4", "Ester 7", "Hiob 1", "Hiob 2", "Hiob 3", "Hiob 19", "Hiob 42", "Psalm 1 / 4 / 16", "Psalm 22 / 23 / 24", "Psalm 27 / 31", "Psalm 32 / 37 / 39", "Psalm 42 / 50 / 51", "Psalm 62 / 73", "Psalm 90 / 91 / 92 / 93", "Psalm 103 / 119", "Psalm 139 / 145 / 150", "Sprüche 1", "Sprüche 2 / 3", "Prediger 1 / 2 / 12"], "6": ["Jesaja 1", "Jesaja 6", "Jesaja 9", "Jesaja 40", "Jesaja 41", "Jesaja 53", "Jesaja 55", "Jesaja 66", "Jeremia 1", "Jeremia 2", "Jeremia 31", "Klagelieder 3", "Hesekiel 1", "Hesekiel 3", "Hesekiel 16", "Daniel 1", "Daniel 2", "Daniel 3", "Daniel 4", "Daniel 5", "Daniel 6", "Hosea 1", "Hosea 2", "Hosea 11", "Amos 5", "Jona 1 / 2", "Jona 3 / 4", "Maleachi 1", "Maleachi 2", "Maleachi 3"], "7": ["Matthäus 1", "Matthäus 2", "Matthäus 3", "Matthäus 4", "Matthäus 5", "Matthäus 6", "Matthäus 7", "Matthäus 8", "Matthäus 9", "Matthäus 10", "Matthäus 11", "Matthäus 12", "Matthäus 13", "Matthäus 14", "Matthäus 15", "Matthäus 16", "Matthäus 17", "Matthäus 18", "Matthäus 19", "Matthäus 20", "Matthäus 21", "Matthäus 22", "Matthäus 23", "Matthäus 24", "Matthäus 25", "Matthäus 26", "Matthäus 27", "Matthäus 28", "Lukas 1", "Lukas 2", "Lukas 4"], "8": ["Lukas 5", "Lukas 6", "Lukas 7", "Lukas 8", "Lukas 9", "Lukas 10", "Lukas 11", "Lukas 12", "Lukas 13", "Lukas 14", "Lukas 15", "Lukas 16", "Lukas 17", "Lukas 18", "Lukas 19", "Lukas 20", "Lukas 21", "Lukas 22", "Lukas 23", "Lukas 24", "Johannes 1", "Johannes 2", "Johannes 3", "Johannes 4", "Johannes 5", "Johannes 6", "Johannes 7", "Johannes 8", "Johannes 9", "Johannes 10", "Johannes 11"], "9": ["Johannes 12", "Johannes 13", "Johannes 14", "Johannes 15", "Johannes 16", "Johannes 17", "Johannes 18", "Johannes 19", "Johannes 20", "Johannes 21", "Apostelgeschichte 1", "Apostelgeschichte 2", "Apostelgeschichte 3", "Apostelgeschichte 4", "Apostelgeschichte 5", "Apostelgeschichte 6", "Apostelgeschichte 7", "Apostelgeschichte 8", "Apostelgeschichte 9", "Apostelgeschichte 10", "Apostelgeschichte 11 / 12", "Apostelgeschichte 13", "Apostelgeschichte 14", "Apostelgeschichte 16", "Apostelgeschichte 17", "Apostelgeschichte 18", "Apostelgeschichte 19", "Apostelgeschichte 20", "Apostelgeschichte 21", "Apostelgeschichte 26"], "10": ["Apostelgeschichte 27", "Apostelgeschichte 28", "Römer 1", "Römer 2", "Römer 3", "Römer 4", "Römer 5", "Römer 6", "Römer 7", "Römer 8", "Römer 12", "Römer 13", "Römer 14", "Römer 15", "1. Korinther 1", "1. Korinther 2 / 3", "1. Korinther 4 / 5", "1. Korinther 6", "1. Korinther 7", "1. Korinther 8", "1. Korinther 9", "1. Korinther 10", "1. Korinther 11", "1. Korinther 12", "1. Korinther 13", "1. Korinther 14", "1. Korinther 15", "2. Korinther 1", "2. Korinther 2 / 3", "2. Korinther 4", "2. Korinther 5 / 6"], "11": ["Galater 1", "Galater 2", "Galater 3", "Galater 4", "Galater 5", "Galater 6", "Epheser 1", "Epheser 2", "Epheser 3", "Epheser 4", "Epheser 5", "Philipper 1", "Philipper 2", "Philipper 3", "Philipper 4", "Kolosser 1", "Kolosser 2", "Kolosser 3", "Kolosser 4", "1. Thessalonicher 1", "1. Thessalonicher 2", "1. Thessalonicher 3", "1. Thessalonicher 4", "1. Thessalonicher 5", "1. Timotheus 1", "1. Timotheus 2", "1. Timotheus 4", "1. Timotheus 5", "1. Timotheus 6", "2. Timotheus 1"], "12": ["2. Timotheus 2", "2. Timotheus 3", "2. Timotheus 4", "Jakobus 1", "Jakobus 2", "Jakobus 3", "Jakobus 4", "Jakobus 5", "1. Petrus 1", "1. Petrus 2", "1. Petrus 3", "1. Petrus 4", "1. Petrus 5", "1. Johannes 1", "1. Johannes 2", "1. Johannes 3", "1. Johannes 4", "1. Johannes 5", "Offenbarung 1", "Offenbarung 2", "Offenbarung 3", "Offenbarung 4 / 5", "Offenbarung 12", "Offenbarung 13", "Offenbarung 14", "Offenbarung 16", "Offenbarung 17", "Offenbarung 19", "Offenbarung 20", "Offenbarung 21", "Offenbarung 22"]}};
+
+/* ================= SPEICHER (gleiche Schlüssel wie DataStore der Android-App) ================= */
+const STORE = 'flaechenlese_data_v1';
+let P = {};
+function load(){ try{ P = JSON.parse(localStorage.getItem(STORE) || '{}') || {}; }catch(e){ P = {}; } }
+function save(){ try{ localStorage.setItem(STORE, JSON.stringify(P)); }catch(e){ if(!save._warned){ save._warned = true; setTimeout(() => toast('⚠️ Speichern fehlgeschlagen – bitte Backup erstellen'), 0); } } }
+const hasUserData = () => Object.keys(P).some(k => /^(read_days|small_read_days|custom_read_|r_|v_|n_|wr_|wv_|mr_|yr_)/.test(k) && (Array.isArray(P[k]) ? P[k].length : String(P[k]).trim()));
+const getSet = k => new Set(P[k] || []);
+const putSet = (k, s) => { P[k] = [...s]; };
+
+/* ================= DATUM ================= */
+const D = (y,m,d) => { const t = new Date(y, m-1, d, 12); return {y:t.getFullYear(), m:t.getMonth()+1, d:t.getDate()}; };
+const today = () => { const t = new Date(); return D(t.getFullYear(), t.getMonth()+1, t.getDate()); };
+const addDays = (a,n) => D(a.y, a.m, a.d+n);
+const addMonths = (a,n) => { const t = new Date(a.y, a.m-1+n, 1, 12); const y=t.getFullYear(), m=t.getMonth()+1; return {y, m, d: Math.min(a.d, lenMonth(y,m))}; };
+const lenMonth = (y,m) => new Date(y, m, 0).getDate();
+const dow = a => { const w = new Date(a.y, a.m-1, a.d, 12).getDay(); return w === 0 ? 7 : w; };
+const utc = a => Date.UTC(a.y, a.m-1, a.d);
+const fromUtc = ms => { const t = new Date(ms); return {y:t.getUTCFullYear(), m:t.getUTCMonth()+1, d:t.getUTCDate()}; };
+const daysBetween = (a,b) => Math.round((utc(b) - utc(a)) / 864e5);
+const sameDay = (a,b) => a.y===b.y && a.m===b.m && a.d===b.d;
+function isoWeek(a){ const t = new Date(Date.UTC(a.y, a.m-1, a.d)); const day = t.getUTCDay() || 7; t.setUTCDate(t.getUTCDate() + 4 - day); const y0 = new Date(Date.UTC(t.getUTCFullYear(),0,1)); return Math.ceil(((t - y0)/864e5 + 1)/7); }
+const mondayOf = a => addDays(a, 1 - dow(a));
+const WD  = ['Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag','Sonntag'];
+const WDS = ['MO','DI','MI','DO','FR','SA','SO'];
+const MN  = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+const MNS = ['Jan.','Feb.','März','Apr.','Mai','Juni','Juli','Aug.','Sept.','Okt.','Nov.','Dez.'];
+const pad = n => String(n).padStart(2,'0');
+const iso = a => `${String(a.y).padStart(4,'0')}-${pad(a.m)}-${pad(a.d)}`;
+const parseIso = s => { const [y,m,d] = s.split('-').map(Number); return {y,m,d}; };
+const fmtLong = a => `${a.d}. ${MN[a.m-1]} ${a.y}`;
+const dKey = a => `${a.y}_${a.m}_${a.d}`;
+
+/* ================= LESEPLAN-LOGIK ================= */
+const planType = () => P.plan_type || 'LARGE';
+function prefix(t){ if(t==='LARGE') return 'L'; if(t==='SMALL') return 'S'; if(t==='CUSTOM') return 'C'; if(t.startsWith('CUSTOM_')) return 'C_'+t.slice(7); return 'L'; }
+function readKey(t){ if(t==='SMALL') return 'small_read_days'; if(t==='CUSTOM') return 'custom_read_days'; if(t.startsWith('CUSTOM_')) return 'custom_read_'+t.slice(7); return 'read_days'; }
+const customIds = () => P.custom_plan_ids || [];
+const customName = id => P['custom_name_'+id] || 'Unbenannter Plan';
+function planLabel(t){
+  if(t==='LARGE') return 'Große Flächenlese';
+  if(t==='SMALL') return 'Kleine Flächenlese';
+  if(t==='CUSTOM') return 'Eigener Leseplan';
+  if(t.startsWith('CUSTOM_')) return customName(t.slice(7));
+  return 'Flächenlese';
+}
+function planName(t){
+  if(t==='LARGE') return 'GROSSE FLÄCHENLESE';
+  if(t==='SMALL') return 'KLEINE FLÄCHENLESE';
+  if(t==='CUSTOM') return 'EIGENER LESEPLAN';
+  if(t.startsWith('CUSTOM_')) return customName(t.slice(7)).toUpperCase();
+  return 'FLÄCHENLESE';
+}
+function isRead(a, t=planType()){
+  const s = getSet(readKey(t));
+  return s.has(iso(a)) || (a.y===2026 && s.has(pad(a.m)+'-'+pad(a.d)));
+}
+function toggleRead(a, t=planType()){
+  const k = readKey(t), s = getSet(k), v = iso(a), old = pad(a.m)+'-'+pad(a.d);
+  if(s.has(v)) s.delete(v);
+  else if(a.y===2026 && s.has(old)) s.delete(old);
+  else s.add(v);
+  putSet(k, s); save();
+}
+function customPassage(csv, start, target, rep){
+  const lines = csv.split(/\r\n|\r|\n/).filter(l => l.trim());
+  if(!lines.length) return null;
+  const db = daysBetween(start, target);
+  if(db < 0) return null;
+  let i;
+  if(rep) i = db % lines.length; else { if(db >= lines.length) return null; i = db; }
+  return lines[i].split(/[,;\t]/).filter(x => x.trim()).join('|');
+}
+function planPassage(a, t=planType()){
+  if(t.startsWith('CUSTOM')){
+    const id = t.slice(7);
+    const csv = t==='CUSTOM' ? P.custom_plan_data : P['custom_data_'+id];
+    const st  = t==='CUSTOM' ? P.custom_plan_start_date : P['custom_start_'+id];
+    const rep = t.startsWith('CUSTOM_') ? !!P['custom_repeat_'+id] : false;
+    if(csv != null && st != null) return customPassage(csv, fromUtc(st), a, rep) ?? 'Plan beendet';
+    return 'Kein Plan geladen';
+  }
+  const arr = PLANS[t==='SMALL' ? 'S' : 'L'][a.m];
+  return (arr && arr[a.d-1]) || 'Kein Eintrag';
+}
+function effPassage(a){
+  const p = planPassage(a);
+  if(!['Plan beendet','Kein Eintrag','Kein Plan geladen'].includes(p)) return p;
+  const r = getN('r', a);
+  return r.trim() ? r : p;
+}
+function splitPassages(passage){
+  const raw = String(passage).split(/[|\n\/]+/).map(s => s.trim()).filter(Boolean);
+  const out = []; let lastBook = '';
+  for(const part of raw){
+    const letters = (part.match(/\p{L}/gu) || []).length;
+    if(letters > 3){
+      const m = part.match(/^(.+?)\s+\d[\d,:.\-–\s]*$/);
+      if(m) lastBook = m[1];
+      out.push(part);
+    } else if(lastBook && /\d/.test(part)) out.push(lastBook + ' ' + part);
+    else out.push(part);
+  }
+  return out;
+}
+
+/* ================= NOTIZEN / VERSE ================= */
+const nKey = (k,t,a) => `${k}_${prefix(t)}_${a.y}_${a.m}_${a.d}`;
+function getN(k, a, t=planType()){ return P[nKey(k,t,a)] ?? (t==='LARGE' ? P[`${k}_${a.y}_${a.m}_${a.d}`] : null) ?? ''; }
+function getMon(k, y, m, t=planType()){ return P[`${k}_${prefix(t)}_${y}_${m}`] ?? (t==='LARGE' ? P[`${k}_${y}_${m}`] : null) ?? ''; }
+function getYear(k, y, t=planType()){ return P[`${k}_${prefix(t)}_${y}`] ?? (t==='LARGE' ? P[`${k}_${y}`] : null) ?? ''; }
+function saveNote(a, r, v, n){ const t = planType(); P[nKey('r',t,a)] = r; P[nKey('v',t,a)] = v; P[nKey('n',t,a)] = n; save(); }
+function saveWeekly(a, r, v, src){ const t = planType(); P[nKey('wr',t,a)] = r; P[nKey('wv',t,a)] = v; P[nKey('ws',t,a)] = src; save(); }
+function saveMonthly(y, m, r, v){ const p = prefix(planType()); P[`mr_${p}_${y}_${m}`] = r; P[`mv_${p}_${y}_${m}`] = v; save(); }
+function saveYearly(y, r, v){ const p = prefix(planType()); P[`yr_${p}_${y}`] = r; P[`yv_${p}_${y}`] = v; save(); }
+function weeklyNote(a){
+  const sd = getN('ws', a);
+  if(sd){ const p = sd.split('_'); if(p.length >= 2){
+    const m = +p[p.length-2] || a.m, d = +p[p.length-1] || a.d, y = p.length >= 3 ? (+p[p.length-3] || a.y) : a.y;
+    return getN('n', D(y,m,d));
+  }}
+  return getN('wn', a);
+}
+function daysWithNotes(t=planType()){
+  const pre = prefix(t), out = new Set();
+  for(const [k,v] of Object.entries(P)){
+    if(typeof v !== 'string' || !v.trim()) continue;
+    const own = k.startsWith(`v_${pre}_`) || k.startsWith(`n_${pre}_`) || k.startsWith(`r_${pre}_`);
+    const legacy = t==='LARGE' && !k.includes('_L_') && !k.includes('_S_') && !k.includes('_C_') && /^(v|n|r)_\d/.test(k);
+    if(own || legacy){ const p = k.split('_'); if(p.length >= 3) out.add(`${p[p.length-3]}_${p[p.length-2]}_${p[p.length-1]}`); }
+  }
+  return out;
+}
+
+/* ================= BIBEL-LINKS (YouVersion / bible.com) ================= */
+const BOOKS = {"1. Mose":"GEN","2. Mose":"EXO","3. Mose":"LEV","4. Mose":"NUM","5. Mose":"DEU","Josua":"JOS","Richter":"JDG","Rut":"RUT","Ruth":"RUT","1. Samuel":"1SA","2. Samuel":"2SA","1. Könige":"1KI","2. Könige":"2KI","1. Chronik":"1CH","2. Chronik":"2CH","Esra":"EZR","Nehemia":"NEH","Ester":"EST","Esther":"EST","Hiob":"JOB","Psalm":"PSA","Sprüche":"PRO","Prediger":"ECC","Hohelied":"SNG","Jesaja":"ISA","Jeremia":"JER","Klagelieder":"LAM","Hesekiel":"EZK","Daniel":"DAN","Hosea":"HOS","Joel":"JOL","Amos":"AMO","Obadja":"OBA","Jona":"JON","Micha":"MIC","Nahum":"NAM","Habakuk":"HAB","Zephanja":"ZEP","Haggai":"HAG","Sacharja":"ZEC","Maleachi":"MAL","Matthäus":"MAT","Markus":"MRK","Lukas":"LUK","Johannes":"JHN","Apostelgeschichte":"ACT","Römer":"ROM","1. Korinther":"1CO","2. Korinther":"2CO","Galater":"GAL","Epheser":"EPH","Philipper":"PHP","Kolosser":"COL","1. Thessalonicher":"1TH","2. Thessalonicher":"2TH","1. Timotheus":"1TI","2. Timotheus":"2TI","Titus":"TIT","Philemon":"PHM","Hebräer":"HEB","Jakobus":"JAS","1. Petrus":"1PE","2. Petrus":"2PE","1. Johannes":"1JN","2. Johannes":"2JN","3. Johannes":"3JN","Judas":"JUD","Offenbarung":"REV","Ps":"PSA","Psalmen":"PSA","Psa":"PSA","1.Sam":"1SA","2.Sam":"2SA","1.Kön":"1KI","2.Kön":"2KI","1.Chr":"1CH","2.Chr":"2CH","Apg":"ACT","Mt":"MAT","Mk":"MRK","Lk":"LUK","Joh":"JHN","Röm":"ROM","1.Kor":"1CO","2.Kor":"2CO","Gal":"GAL","Eph":"EPH","Phil":"PHP","Kol":"COL","1.Thess":"1TH","2.Thess":"2TH","1.Tim":"1TI","2.Tim":"2TI","Tit":"TIT","Phlm":"PHM","Hebr":"HEB","Jak":"JAS","1.Petr":"1PE","2.Petr":"2PE","1.Joh":"1JN","2.Joh":"2JN","3.Joh":"3JN","Jud":"JUD","Offb":"REV","Off":"REV"};
+const BOOK_NAMES = Object.keys(BOOKS).sort((a,b) => b.length - a.length);
+function bibleUrl(passage){
+  const p = String(passage).trim(), low = p.toLowerCase();
+  let code = null, found = null, foundIdx = Infinity;
+  for(const b of BOOK_NAMES){ const i = low.indexOf(b.toLowerCase()); if(i !== -1 && i < foundIdx){ code = BOOKS[b]; found = b; foundIdx = i; } }
+  if(!code) return null;
+  let rest = p.slice(foundIdx + found.length).replace(/^[^\s\d]*/, '').trim();
+  const parts = rest.split(/[\s,:]+/).filter(Boolean);
+  const chapter = (parts[0] || '1').split(/[-–]/)[0];
+  const verse = parts[1] ? parts[1].split(/[-–]/)[0] : null;
+  const ref = verse && /^\d+$/.test(verse) ? `${code}.${chapter}.${verse}` : `${code}.${chapter}`;
+  return `https://www.bible.com/bible/${P.translation_id || 877}/${ref}`;
+}
+function refLink(ref, cls='', inner=null){
+  const parts = splitPassages(ref);
+  const html = inner ?? esc(ref);
+  if(parts.length > 1) return `<a class="${cls}" data-a="yvpick" data-ref="${esc(ref)}">${html}</a>`;
+  const url = bibleUrl(parts[0] || ref);
+  return url ? `<a class="${cls}" href="${url}" target="_blank" rel="noopener">${html}</a>` : `<span class="${cls}">${html}</span>`;
+}
+
+/* ================= HILFSFUNKTIONEN UI ================= */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ICONS = {
+  home:'M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z',
+  cal:'M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM9 14H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2zm-8 4H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2z',
+  table:'M10 10.02h5V21h-5zM17 21h3c1.1 0 2-.9 2-2v-9h-5v11zm3-18H5c-1.1 0-2 .9-2 2v3h19V5c0-1.1-.9-2-2-2zM3 19c0 1.1.9 2 2 2h3V10H3v9z',
+  search:'M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z',
+  settings:'M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z',
+  book:'M21 5c-1.11-.35-2.33-.5-3.5-.5-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14.65c0 .25.25.5.5.5.1 0 .15-.05.25-.05C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5 1.35-.85 3.8-1.5 5.5-1.5 1.65 0 3.35.3 4.75 1.05.1.05.15.05.25.05.25 0 .5-.25.5-.5V6c-.6-.45-1.25-.75-2-1zm0 13.5c-1.1-.35-2.3-.5-3.5-.5-1.7 0-4.15.65-5.5 1.5V8c1.35-.85 3.8-1.5 5.5-1.5 1.2 0 2.4.15 3.5.5v11.5z',
+  check:'M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z',
+  edit:'M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.9959.9959 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z',
+  editnote:'M3 10h11v2H3zm0-2h11V6H3zm0 8h7v-2H3zm15.01-3.13.71-.71a.996.996 0 0 1 1.41 0l.71.71c.39.39.39 1.02 0 1.41l-.71.71-2.12-2.12zm-.71.71-5.3 5.3V21h2.12l5.3-5.3-2.12-2.12z',
+  event:'M17 10H7v2h10v-2zm2-7h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zm-5-5H7v2h7v-2z',
+  share:'M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z',
+  back:'M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z',
+  fwd:'M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z',
+  drop:'M7 10l5 5 5-5z',
+  auto:'M19 9l1.25-2.75L23 5l-2.75-1.25L19 1l-1.25 2.75L15 5l2.75 1.25L19 9zm-7.5.5L9 4 6.5 9.5 1 12l5.5 2.5L9 20l2.5-5.5L17 12l-5.5-2.5zM19 15l-1.25 2.75L15 19l2.75 1.25L19 23l1.25-2.75L23 19l-2.75-1.25L19 15z',
+  del:'M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z',
+  copy:'M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z',
+  paste:'M19 2h-4.18C14.4.84 13.3 0 12 0c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm7 18H5V4h2v3h10V4h2v16z',
+  sync:'M22 8l-4-4v3H3v2h15v3l4-4zM2 16l4 4v-3h15v-2H6v-3l-4 4z',
+  add:'M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z',
+  clear:'M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z',
+  download:'M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z',
+  upload:'M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z',
+  print:'M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z',
+  bell:'M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z',
+  phone:'M17 1.01L7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14z'
+};
+const ic = (n, size=24, cls='') => `<svg class="i ${cls}" viewBox="0 0 24 24" style="width:${size}px;height:${size}px"><path d="${ICONS[n]}"/></svg>`;
+let toastTimer;
+function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('on'), 2600); }
+
+function dialog(title, bodyHtml, actions, opts={}){
+  const ov = document.createElement('div'); ov.className = 'ovl';
+  ov.innerHTML = `<div class="dlg">${title ? `<div class="dt2">${title}</div>` : ''}<div class="body">${bodyHtml}</div><div class="acts"></div></div>`;
+  const acts = ov.querySelector('.acts');
+  const close = (reason) => { if(!ov.isConnected) return; ov.remove(); opts.onClose && opts.onClose(reason); };
+  (actions || []).forEach(a => { const b = document.createElement('button'); b.className = a.filled ? 'fbtn' : 'tbtn'; b.textContent = a.label; b.onclick = () => { const r = a.onClick ? a.onClick(ov) : undefined; if(r !== false) close('action'); }; acts.appendChild(b); });
+  ov.addEventListener('click', e => { if(e.target === ov) close('outside'); });
+  document.body.appendChild(ov);
+  ov.close = close;
+  return ov;
+}
+function confirmDialog(title, text, okLabel, onOk){ dialog(esc(title), `<div>${esc(text)}</div>`, [{label:'Abbrechen'},{label:okLabel, filled:true, onClick:onOk}]); }
+
+async function saveFile(filename, data, mime, preferShare=false){
+  if(preferShare && !(window.claude && window.claude.use) && navigator.canShare){
+    try{
+      const file = new File([data], filename, {type: mime});
+      if(navigator.canShare({files:[file]})){ await navigator.share({files:[file], title: filename}); return true; }
+    }catch(e){ if(e && e.name === 'AbortError') return false; }
+  }
+  try{
+    if(window.claude && typeof window.claude.use === 'function'){
+      const dl = await window.claude.use('downloads');
+      if(dl){ await dl.save({filename, data}); return true; }
+    }
+  }catch(e){ if(e && e.code === 'declined') return false; }
+  try{
+    const blob = new Blob([data], {type: mime});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename;
+    document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+    return true;
+  }catch(e){ toast('Speichern nicht möglich'); return false; }
+}
+async function copyText(t){ try{ await navigator.clipboard.writeText(t); toast('In Zwischenablage kopiert'); }catch(e){ toast('Kopieren nicht möglich'); } }
+
+/* ================= NAVIGATION ================= */
+let tab = 'home';
+let stack = [];
+const S = { homeOff:0, calOff:0, ovTab:0, ovOff:[0,0,0], search:'', searchPlan:'ALL' };
+let pendingSlide = 0;
+const TABS = [['home','home','Heute'],['calendar','cal','Kalender'],['overview','table','Ansicht'],['search','search','Suchen'],['settings','settings','Einstellungen']];
+let lastNavTap = {};
+function renderNav(){
+  $('#nav').innerHTML = TABS.map(([id,icn,lbl]) => `<button data-a="tab" data-tab="${id}" class="${tab===id?'sel':''}"><span class="pill">${ic(icn)}</span><span class="l">${lbl}</span></button>`).join('');
+}
+function current(){ return stack.length ? stack[stack.length-1] : {name: tab}; }
+let awaitingPop = 0;
+function push(route){ stack.push(route); try{ history.pushState({fl: stack.length}, ''); }catch(e){} render(); }
+function goBack(){
+  if(!stack.length) return;
+  let handled = false; awaitingPop++;
+  const fallback = setTimeout(() => { if(!handled){ awaitingPop = Math.max(0, awaitingPop-1); stack.pop(); render(); } }, 350);
+  try{ history.back(); }catch(e){}
+  goBack._h = () => { handled = true; clearTimeout(fallback); };
+}
+window.addEventListener('popstate', () => {
+  if(goBack._h){ goBack._h(); goBack._h = null; awaitingPop = Math.max(0, awaitingPop-1); }
+  if(stack.length){ stack.pop(); render(); }
+});
+
+function render(keepScroll=false){
+  const scr = $('#screen'); const r = current();
+  const key = r.name + (r.date ? iso(r.date) : '');
+  const st = keepScroll && render._last === key ? scr.scrollTop : 0;
+  scr.innerHTML = SCREENS[r.name](r);
+  render._last = key;
+  scr.scrollTop = st;
+  renderNav();
+  AFTER[r.name] && AFTER[r.name](r);
+  const pg = scr.querySelector('.page');
+  if(pg && pendingSlide){
+    const dir = pendingSlide; pendingSlide = 0;
+    pg.style.transition = 'none'; pg.style.transform = `translateX(${dir*40}%)`; pg.style.opacity = '.3';
+    requestAnimationFrame(() => requestAnimationFrame(() => { pg.style.transition = 'transform .22s ease-out, opacity .22s'; pg.style.transform = 'translateX(0)'; pg.style.opacity = '1'; }));
+  }
+}
+
+/* ===== Wischen (wie HorizontalPager) ===== */
+let suppressClick = false;
+function attachSwipe(el, step){
+  const page = el.querySelector('.page'); if(!page) return;
+  let sx=0, sy=0, dx=0, active=false, lock=null;
+  el.addEventListener('pointerdown', e => { if(e.pointerType==='mouse' && e.button!==0) return; if(e.target.closest('input,textarea')) return; sx=e.clientX; sy=e.clientY; dx=0; active=true; lock=null; });
+  el.addEventListener('pointermove', e => {
+    if(!active) return;
+    const mx = e.clientX - sx, my = e.clientY - sy;
+    if(lock === null && (Math.abs(mx) > 10 || Math.abs(my) > 10)){ lock = Math.abs(mx) > Math.abs(my) ? 'x' : 'y'; if(lock==='x'){ try{ el.setPointerCapture(e.pointerId); }catch(_){} } }
+    if(lock === 'x'){ dx = mx; page.style.transition = 'none'; page.style.transform = `translateX(${dx}px)`; }
+  });
+  const end = () => {
+    if(!active) return; active = false;
+    if(lock !== 'x') return;
+    suppressClick = true; setTimeout(() => suppressClick = false, 60);
+    const w = el.clientWidth;
+    if(Math.abs(dx) > Math.min(70, w*0.18)){
+      const dir = dx < 0 ? 1 : -1;
+      page.style.transition = 'transform .16s ease-in'; page.style.transform = `translateX(${-dir*w}px)`;
+      setTimeout(() => { pendingSlide = dir; step(dir); }, 150);
+    } else { page.style.transition = 'transform .2s'; page.style.transform = 'translateX(0)'; }
+  };
+  el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
+}
+document.addEventListener('click', e => { if(suppressClick){ e.preventDefault(); e.stopPropagation(); } }, true);
+let pagerStep = null;
+document.addEventListener('keydown', e => {
+  if(document.querySelector('.ovl') || e.target.closest('input,textarea')) return;
+  if(pagerStep && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')){ const d = e.key === 'ArrowRight' ? 1 : -1; pendingSlide = d; pagerStep(d); }
+});
+const arrows = () => `<button class="navarrow l" data-a="pg" data-d="-1">${ic('back',20)}</button><button class="navarrow r" data-a="pg" data-d="1">${ic('fwd',20)}</button>`;
+
+/* Tippen vs. Doppeltippen */
+let lastTap = {k:null, t:0, timer:null};
+function tapOrDouble(key, single, dbl){
+  const now = Date.now();
+  if(lastTap.k === key && now - lastTap.t < 320){ clearTimeout(lastTap.timer); lastTap = {k:null,t:0,timer:null}; dbl(); }
+  else { clearTimeout(lastTap.timer); lastTap = {k:key, t:now, timer:setTimeout(() => { lastTap.k = null; single(); }, 260)}; }
+}
+
+/* ================= BILDSCHIRME ================= */
+function dayContent(a){
+  const read = isRead(a), hasN = daysWithNotes().has(dKey(a)), sun = dow(a) === 7, wr = getN('wr', a);
+  const passages = splitPassages(effPassage(a));
+  let weekly = '';
+  if(sun){
+    if(!wr) weekly = `<button class="obtn secc" data-a="wedit" data-date="${iso(a)}">${ic('event')} Wochenvers wählen</button>`;
+    else weekly = `<div class="row"><button class="btn tonal flex1" data-a="wview" data-date="${iso(a)}">${ic('event')}<span class="t">${esc(wr)}</span></button>${refLink(wr, 'ibtn tonalbg', ic('book'))}</div>
+      <button class="ibtn" style="margin-top:16px" data-a="wshare" data-date="${iso(a)}">${ic('share')}</button>`;
+  }
+  return `<div class="daywrap">
+    <button class="chip" data-a="planchip">${esc(planName(planType()))}${ic('drop',16)}</button>
+    <div class="center"><div class="wd">${WD[dow(a)-1].toUpperCase()}</div><div class="dt">${fmtLong(a)}</div></div>
+    <div class="center passage">${ic('book',32,'prim')}<div class="lbl">Bibelstelle</div>${passages.map(p => refLink(p, 'pass')).join('')}</div>
+    <button class="btn big ${read ? 'sec' : ''}" data-a="toggle" data-date="${iso(a)}">${read ? ic('check',20) + 'Gelesen' : 'Als gelesen markieren'}</button>
+    <button class="obtn ${hasN ? 'has' : ''}" data-a="note" data-date="${iso(a)}">${ic(hasN ? 'event' : 'editnote')} Notiz / Tagesvers</button>
+    ${weekly}
+  </div>`;
+}
+const SCREENS = {
+  home(){
+    const a = addDays(today(), S.homeOff);
+    const banner = (!isStandalone() && !P.install_hint_dismissed && !(window.claude && window.claude.use)) ? `<div class="hint" style="margin:calc(12px + var(--safe-t)) 16px -20px;display:flex;gap:10px;align-items:flex-start;position:relative;z-index:2">${ic('phone',22)}<div style="flex:1">${isIOS() ? 'Tippe auf <b>Teilen</b> → <b>„Zum Home-Bildschirm“</b>, damit Flächenlese wie eine App läuft und deine Daten sicher bleiben.' : (deferredInstall ? 'Installiere Flächenlese als App – dann läuft sie im Vollbild und offline.' : 'Menü ⋮ → <b>„App installieren“</b>, damit Flächenlese wie eine App läuft.')}${deferredInstall ? `<div style="margin-top:8px"><button class="fbtn" data-a="install">Installieren</button></div>` : ''}</div><button data-a="dismissInstall" style="opacity:.7">${ic('clear',20)}</button></div>` : '';
+    return `${banner}<div class="pager grad" id="pager">${arrows()}<div class="page">${dayContent(a)}</div></div>`;
+  },
+  day(r){
+    const a = addDays(r.date, r.off || 0);
+    return `<div class="pager grad" id="pager"><button class="backbtn" data-a="back">${ic('back')}</button>${arrows()}<div class="page">${dayContent(a)}</div></div>`;
+  },
+  calendar(){
+    const t = today(), first = addMonths({y:t.y, m:t.m, d:1}, S.calOff), y = first.y, m = first.m;
+    const tabs = MNS.map((n,i) => `<button class="${i+1===m?'sel':''}" data-a="calmonth" data-m="${i+1}">${n}</button>`).join('');
+    const large = planType() === 'LARGE';
+    const days = (m === 2 && !large) ? 29 : lenMonth(y, m);
+    const offset = dow(first) - 1;
+    const notes = daysWithNotes();
+    let cells = '';
+    for(let i=0;i<offset;i++) cells += '<div></div>';
+    for(let d=1; d<=days; d++){
+      const a = {y,m,d}; const rd = isRead(a); const tod = sameDay(a, t); const hn = notes.has(dKey(a));
+      cells += `<button class="cell ${rd?'read':''} ${tod?'today':''}" data-a="calday" data-date="${y}-${m}-${d}"><span>${d}${hn ? '<i class="nd"></i>' : ''}</span>${rd ? '<i class="rd"></i>' : ''}</button>`;
+    }
+    return `<div class="tabs" id="caltabs">${tabs}</div>
+      <div class="pager" id="pager">${arrows()}<div class="page"><div class="calTitle">${MN[m-1]} ${y}</div><div class="cal"><div class="wdh">${WDS.map(w => `<div>${w}</div>`).join('')}</div><div class="grid">${cells}</div></div></div></div>`;
+  },
+  overview(){
+    const tb = ['Woche','Monat','Jahr'].map((n,i) => `<button class="${S.ovTab===i?'sel':''}" data-a="ovtab" data-i="${i}">${n}</button>`).join('');
+    const t = today(); let inner;
+    if(S.ovTab === 0) inner = weekView(addDays(t, 7*S.ovOff[0]));
+    else if(S.ovTab === 1) inner = monthView(addMonths(t, S.ovOff[1]));
+    else inner = yearView(t.y + S.ovOff[2]);
+    return `<div class="ov-wrap"><div class="ovtabs">${tb}</div><div class="pager" id="pager" style="flex:1;background:var(--ovbg)">${arrows()}<div class="page ovpage">${inner}</div></div></div>`;
+  },
+  search(){
+    const plans = [['ALL','Alle Pläne'],['LARGE','Große Flächenlese'],['SMALL','Kleine Flächenlese'], ...customIds().map(id => ['CUSTOM_'+id, customName(id)])];
+    return `<div class="topbar" style="background:var(--sc);padding-left:16px"><div style="font-size:22px">Suche</div></div>
+    <div style="padding:16px;display:flex;flex-direction:column;gap:16px">
+      <div class="searchbox">${ic('search',24,'muted')}<input id="q" placeholder="Nach Notizen, Bibelstellen, Wörtern suchen..." value="${esc(S.search)}" autocomplete="off"><button class="ibtn sm" id="qclr" style="color:var(--onsv);${S.search?'':'visibility:hidden'}">${ic('clear')}</button></div>
+      <div class="fchips">${plans.map(([id,n]) => `<button class="fchip ${S.searchPlan===id?'sel':''}" data-a="splan" data-id="${esc(id)}">${S.searchPlan===id ? ic('check',18) : ''}${esc(n)}</button>`).join('')}</div>
+      <div id="sres"></div>
+    </div>`;
+  },
+  settings(){ return settingsView(); },
+  note(r){ return noteView(r); }
+};
+const AFTER = {
+  home(){ const pg = $('#pager'); pagerStep = d => { S.homeOff += d; render(); }; attachSwipe(pg, pagerStep); },
+  day(r){ const pg = $('#pager'); pagerStep = d => { r.off = (r.off||0) + d; render(); }; attachSwipe(pg, pagerStep); },
+  calendar(){
+    pagerStep = d => { S.calOff += d; render(); }; attachSwipe($('#pager'), pagerStep);
+    const sel = document.querySelector('#caltabs .sel'); if(sel) sel.scrollIntoView({inline:'center', block:'nearest'});
+  },
+  overview(){ pagerStep = d => { S.ovOff[S.ovTab] += d; render(); }; attachSwipe($('#pager'), pagerStep); },
+  search(){ pagerStep = null; const q = $('#q'); q.addEventListener('input', () => { S.search = q.value; $('#qclr').style.visibility = q.value ? 'visible' : 'hidden'; renderResults(); }); $('#qclr').onclick = () => { S.search=''; q.value=''; $('#qclr').style.visibility='hidden'; renderResults(); q.focus(); }; renderResults(); },
+  settings(){ pagerStep = null; },
+  note(r){ pagerStep = null; afterNote(r); }
+};
+
+/* ----- Wochenansicht ----- */
+function weekView(base){
+  const mon = mondayOf(base), days = [...Array(7)].map((_,i) => addDays(mon, i)), sun = days[6];
+  const wr = getN('wr', sun), wv = getN('wv', sun);
+  let rows = '';
+  for(const a of days){
+    const ps = splitPassages(effPassage(a)), r = getN('r', a), v = getN('v', a), n = getN('n', a);
+    rows += `<div class="tr">
+      <div class="tc" style="flex:1.2"><div style="font-size:8px;font-weight:700;color:#9e9e9e">${WDS[dow(a)-1]}. ${pad(a.d)}.${pad(a.m)}.</div>
+        ${ps.map(p => refLink(p, '', esc(p)).replace('<a ', '<a style="font-size:11px;line-height:13px;font-weight:800;font-style:italic;color:#fff;padding:2px 4px;display:block" ').replace('<span ', '<span style="font-size:11px;font-weight:800;font-style:italic;color:#fff" ')).join('')}</div>
+      <button class="tc" style="flex:1" data-a="wkverse" data-date="${iso(a)}">${r ? refLink(r,'').replace(/^<(a|span) /, '<$1 style="font-size:9px;font-weight:700;color:var(--primary)" ') : ''}${v ? `<div class="clamp" style="-webkit-line-clamp:4;font-size:8px;line-height:10px;color:rgba(255,255,255,.8)">${esc(v)}</div>` : ''}</button>
+      <button class="tc" style="flex:1" data-a="wknote" data-date="${iso(a)}"><div class="clamp" style="-webkit-line-clamp:5;font-size:8px;line-height:10px;color:rgba(255,255,255,.6)">${esc(n)}</div></button>
+    </div>`;
+  }
+  return `<div class="ovhead"><span style="font-size:16px;font-weight:900;letter-spacing:1px">KW ${isoWeek(mon)} · ${MN[sun.m-1].toUpperCase()}</span><span style="font-size:11px;color:var(--primary);letter-spacing:4px">${sun.y}</span></div>
+  <div class="tbl"><div class="tr" style="background:var(--ovsurf)"><div class="th" style="flex:1.2">STELLE</div><div class="th" style="flex:1">VERS</div><div class="th" style="flex:1">NOTIZ</div></div>${rows}
+  <button class="wvrow" style="width:100%" data-a="${wr ? 'wview' : 'wedit'}" data-date="${iso(sun)}"><div style="font-size:9px;font-weight:700;color:var(--primary);letter-spacing:1px">WOCHENVERS</div>
+  ${wr ? `<div style="font-size:13px;font-weight:800;color:#fff">${esc(wr)}</div>${wv ? `<div style="font-size:11px;font-style:italic;color:rgba(255,255,255,.8);line-height:14px">${esc(wv)}</div>` : ''}` : '<div style="font-size:12px;color:#9e9e9e">Kein Vers gewählt</div>'}</button></div>`;
+}
+function sundaysOf(y, m){ const out = []; let a = {y,m,d:1}; a = addDays(a, (7 - dow(a)) % 7); while(a.m === m){ out.push(a); a = addDays(a, 7); } return out; }
+function monthView(base){
+  const y = base.y, m = base.m, suns = sundaysOf(y, m), mr = getMon('mr', y, m), mv = getMon('mv', y, m);
+  const rows = suns.map(s => { const r = getN('wr', s), v = getN('wv', s);
+    return `<div class="tr"><div class="tc" style="flex:.5;font-size:12px;font-weight:700;color:#9e9e9e;padding:8px">${isoWeek(s)}</div>
+    <button class="tc" style="flex:2;padding:8px" data-a="${r ? 'wview' : 'wedit'}" data-date="${iso(s)}">${r ? `<div style="font-size:13px;font-weight:700;color:#fff">${esc(r)}</div>${v ? `<div class="clamp" style="-webkit-line-clamp:2;font-size:11px;font-style:italic;color:rgba(255,255,255,.7)">${esc(v)}</div>` : ''}` : '<div style="font-size:11px;color:#555">Kein Vers gewählt</div>'}</button></div>`; }).join('');
+  return `<div class="ovhead" style="padding-bottom:8px"><span style="font-size:28px;font-weight:900;letter-spacing:1px">${MN[m-1].toUpperCase()}</span><span style="font-size:14px;color:var(--primary);letter-spacing:4px;margin-left:4px">${y}</span></div>
+  <div class="tbl"><div class="tr"><div class="th" style="flex:.5">KW</div><div class="th" style="flex:2">WOCHENVERS</div></div>${rows}
+  <button class="wvrow" style="width:100%;padding:16px" data-a="medit" data-y="${y}" data-m="${m}"><div style="display:flex;align-items:center;gap:8px;font-size:10px;font-weight:700;color:var(--primary);letter-spacing:1px">MONATSVERS ${ic('edit',12)}</div>
+  ${mr ? `<div style="font-size:16px;font-weight:800;color:var(--primary);margin-top:4px">${esc(mr)}</div>${mv ? `<div style="font-size:12px;font-style:italic;color:rgba(255,255,255,.8);line-height:16px;margin-top:2px">${esc(mv)}</div>` : ''}` : '<div style="font-size:12px;color:#9e9e9e;margin-top:4px">Tippen zum Wählen</div>'}</button></div><div style="height:40px"></div>`;
+}
+function yearView(y){
+  const yr = getYear('yr', y), yv = getYear('yv', y);
+  const rows = MN.map((n,i) => { const r = getMon('mr', y, i+1), v = getMon('mv', y, i+1);
+    return `<div class="tr"><div class="tc" style="flex:1;align-items:flex-start;font-size:12px;font-weight:700;color:#9e9e9e;padding:8px">${n}</div>
+    <div class="tc" style="flex:2;padding:8px">${r ? `${refLink(r,'').replace(/^<(a|span) /, '<$1 style="font-size:13px;font-weight:700;color:#fff" ')}${v ? `<div class="clamp" style="-webkit-line-clamp:1;font-size:11px;font-style:italic;color:rgba(255,255,255,.7)">${esc(v)}</div>` : ''}` : '<div style="font-size:11px;color:#555">-</div>'}</div></div>`; }).join('');
+  return `<div class="ovhead" style="padding-bottom:16px;font-size:24px;font-weight:900;letter-spacing:2px"><span>JAHR</span><span style="color:var(--primary)">${y}</span></div>
+  <div class="tbl"><div class="tr"><div class="th" style="flex:1">MONAT</div><div class="th" style="flex:2">MONATSVERS</div></div>${rows}
+  <button class="wvrow" style="width:100%" data-a="${yr ? 'yview' : 'yedit'}" data-y="${y}"><div style="font-size:9px;font-weight:700;color:var(--primary);letter-spacing:1px">JAHRESVERS</div>
+  ${yr ? `<div style="font-size:14px;font-weight:800;color:#fff">${esc(yr)}</div>${yv ? `<div style="font-size:11px;font-style:italic;color:rgba(255,255,255,.8);line-height:14px">${esc(yv)}</div>` : ''}` : '<div style="font-size:12px;color:#9e9e9e">Tippen zum Wählen</div>'}</button></div>`;
+}
+
+/* ----- Suche ----- */
+function searchNotes(planId, query){
+  if(!query.trim()) return [];
+  const ql = query.trim().toLocaleLowerCase('de'), toks = ql.split(/\s+/).filter(Boolean);
+  const pre = planId !== 'ALL' ? prefix(planId) : '';
+  const entries = new Map(); const re = /_(\d{4})_(\d{1,2})_(\d{1,2})$/;
+  for(const [k,v] of Object.entries(P)){
+    if(typeof v !== 'string' || !v.trim()) continue;
+    if(planId !== 'ALL' && !(k.includes(`_${pre}_`) || (planId==='LARGE' && !k.includes('_L_') && !k.includes('_S_') && !k.includes('_C_')))) continue;
+    const m = k.match(re); if(!m) continue;
+    const id = `${m[1]}_${+m[2]}_${+m[3]}`; if(!entries.has(id)) entries.set(id, {y:+m[1], m:+m[2], d:+m[3], e:{}});
+    entries.get(id).e[k] = v.trim();
+  }
+  const match = t => { if(!t || !t.trim()) return false; const l = t.toLocaleLowerCase('de'); return l.includes(ql) || toks.every(x => l.includes(x)); };
+  const out = [];
+  for(const {y,m,d,e} of entries.values()){
+    const f = p => { const k = Object.keys(e).find(k => k.startsWith(p)); return k ? e[k] : ''; };
+    const note = f('n_'), wnote = f('wn_'), ref = f('r_'), wref = f('wr_'), verse = f('v_'), wverse = f('wv_');
+    const ds = `${pad(d)}.${pad(m)}.${y}`;
+    if(match(note)) out.push({y,m,d,cat:'Tagesnotiz', ref: ref || `Notiz vom ${ds}`, content: note, ds});
+    if(match(wnote)) out.push({y,m,d,cat:'Wochennotiz', ref: wref || `Wochennotiz ${ds}`, content: wnote, ds});
+    if(match(ref) || match(verse)) out.push({y,m,d,cat:'Bibelstelle / Vers', ref: ref || `Eintrag ${ds}`, content: verse || ref, ds});
+    if(match(wref) || match(wverse)) out.push({y,m,d,cat:'Wochenvers', ref: wref || `Wochenvers ${ds}`, content: wverse || wref, ds});
+  }
+  return out.sort((a,b) => b.y-a.y || b.m-a.m || b.d-a.d);
+}
+function renderResults(){
+  const box = $('#sres'); if(!box) return;
+  if(!S.search.trim()){ box.innerHTML = `<div class="center" style="padding:64px 0;gap:8px">${ic('search',48,'muted')}<div style="font-size:16px" class="muted">Geben Sie einen Suchbegriff ein</div><div class="muted" style="opacity:.7;font-size:14px">Durchsuchen Sie Notizen, Verse und Bibelstellen</div></div>`; return; }
+  const res = searchNotes(S.searchPlan, S.search);
+  if(!res.length){ box.innerHTML = `<div class="center muted" style="padding:64px 0">Keine Ergebnisse für "${esc(S.search)}" gefunden</div>`; return; }
+  box.innerHTML = `<div style="font-size:12px;color:var(--primary);margin-bottom:12px">${res.length} Ergebnisse gefunden</div><div style="display:flex;flex-direction:column;gap:12px">` +
+    res.map(r => `<button class="res" data-a="openday" data-date="${r.y}-${r.m}-${r.d}"><div class="row" style="justify-content:space-between"><span class="badge">${esc(r.cat)}</span><span class="small muted">${r.ds}</span></div>${r.ref ? `<div style="font-size:16px;font-weight:700;color:var(--primary)">${esc(r.ref)}</div>` : ''}${r.content ? `<div class="clamp" style="-webkit-line-clamp:4;font-size:14px;white-space:pre-line">${esc(r.content)}</div>` : ''}</button>`).join('') + '</div>';
+}
+
+/* ----- Notiz-Detail ----- */
+function noteView(r){
+  const a = r.date;
+  if(r.edit === undefined){ r.edit = !!r.startEdit || (!getN('r',a) && !getN('v',a) && !getN('n',a)); r.inR = getN('r',a); r.inV = getN('v',a); r.inN = getN('n',a); }
+  const top = `<div class="topbar"><button class="ibtn" style="color:var(--on)" data-a="back">${ic('back')}</button>
+    <div class="ttl"><div style="font-size:11px;font-weight:500;color:var(--primary);letter-spacing:.5px">${r.edit ? 'NOTIZ BEARBEITEN' : 'NOTIZEN'}</div><div style="font-size:16px;font-weight:700">${a.d}. ${MN[a.m-1]} ${a.y}</div></div>
+    ${r.edit ? `<button class="ibtn" data-a="autofill">${ic('auto')}</button><button class="ibtn" data-a="nsave">${ic('check')}</button>` : `<button class="ibtn" style="color:var(--on)" data-a="nedit">${ic('edit')}</button>`}</div>`;
+  let body;
+  if(r.edit){
+    const fld = (id, lbl, val, ta, minh, copy) => `<div class="fld"><label>${lbl}</label>${ta ? `<textarea id="${id}" style="min-height:${minh}px;padding-right:${copy?88:48}px">${esc(val)}</textarea>` : `<textarea id="${id}" rows="1" style="padding-right:48px">${esc(val)}</textarea>`}<div class="clr">${copy ? `<button data-c="${id}" style="color:rgba(139,213,176,.6)">${ic('copy')}</button>` : ''}<button data-x="${id}" style="color:rgba(255,180,171,.6)">${ic('del')}</button></div></div>`;
+    body = `${fld('fR','Bibelstelle',r.inR,false)}${fld('fV','Tagesvers',r.inV,true,56)}${fld('fN','Deine Gedanken',r.inN,true,250,true)}<button class="btn full" data-a="nsave">${ic('check')} Speichern</button>`;
+  } else {
+    const R = getN('r',a), V = getN('v',a), N = getN('n',a);
+    body = (R ? `<div class="ncard"><div class="row" style="justify-content:space-between"><span class="k">BIBELSTELLE</span>${refLink(R, 'ibtn sm', ic('book',20))}</div><div class="selectable" style="font-size:24px;font-weight:700;white-space:pre-line">${esc(R)}</div></div>` : '') +
+      (V ? `<div class="ncard"><div class="k" style="margin-bottom:8px">TAGESVERS</div><div class="selectable" style="font-size:16px;font-weight:500;line-height:24px;white-space:pre-line">${esc(V)}</div></div>` : '') +
+      (N ? `<div class="ncard"><div class="k" style="margin-bottom:8px">DEINE GEDANKEN</div><div class="selectable" style="font-size:16px;line-height:24px;white-space:pre-line">${esc(N)}</div></div>` : '') +
+      (!R && !V && !N ? '<div class="center" style="padding:80px 0;color:#9e9e9e">Noch keine Notizen vorhanden.</div>' : '');
+  }
+  return `<div style="min-height:100%;background:linear-gradient(to bottom, rgba(0,81,56,.1), var(--surface))">${top}<div style="padding:8px 20px 32px;display:flex;flex-direction:column;gap:20px">${body}</div></div>`;
+}
+function afterNote(r){
+  if(!r.edit) return;
+  const sync = () => { r.inR = $('#fR').value; r.inV = $('#fV').value; r.inN = $('#fN').value; };
+  ['fR','fV','fN'].forEach(id => { const el = $('#'+id); el.addEventListener('input', () => { sync(); if(id==='fR'){ el.style.height='auto'; el.style.height = el.scrollHeight+2+'px'; } }); });
+  const fr = $('#fR'); fr.style.height = 'auto'; fr.style.height = fr.scrollHeight+2+'px';
+  document.querySelectorAll('[data-x]').forEach(b => b.onclick = () => { $('#'+b.dataset.x).value=''; sync(); });
+  document.querySelectorAll('[data-c]').forEach(b => b.onclick = () => copyText($('#'+b.dataset.c).value));
+}
+
+/* ----- Einstellungen ----- */
+const isIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const isStandalone = () => (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+let deferredInstall = null, storagePersisted = null;
+function backupInfo(){
+  if(!P.last_backup) return hasUserData() ? '<span style="color:var(--error)">Noch kein Backup erstellt.</span>' : '<span class="muted">Noch kein Backup erstellt.</span>';
+  const days = Math.floor((Date.now() - P.last_backup) / 864e5); const t = new Date(P.last_backup);
+  return `Letztes Backup: ${pad(t.getDate())}.${pad(t.getMonth()+1)}.${t.getFullYear()} ${days >= 30 ? `<span style="color:var(--error)">(vor ${days} Tagen)</span>` : ''}`;
+}
+const TRANSLATIONS = [[877,'bibel.heute'],[57,'Elberfelder Bibel (ELB)'],[2351,'Elberfelder Bibelkommentar (ELBBK)'],[157,'Schlachter 2000 (SCH2000)'],[73,'Hoffnung für alle (HFA)'],[3100,'LUTheute']];
+function settingsView(){
+  const t = planType(), tid = P.translation_id || 877;
+  const radio = (on, label, act, extra='') => `<button class="radio" data-a="${act}"><span class="rdot ${on?'on':''}"></span><span style="flex:1">${label}</span>${extra}</button>`;
+  const custom = customIds().map(id => `<div class="row">${radio(t==='CUSTOM_'+id, esc(customName(id)), 'setplan" data-p="CUSTOM_'+esc(id))}<button class="ibtn sm" data-a="plancfg" data-id="${esc(id)}">${ic('settings',18)}</button><button class="ibtn sm" style="color:var(--error)" data-a="plandel" data-id="${esc(id)}">${ic('del',18)}</button></div>`).join('');
+  return `<div class="page-pad"><h1>Einstellungen</h1>
+  <div class="card"><h3>Leseplan auswählen</h3><div style="height:8px"></div>
+    ${radio(t==='LARGE','Große Flächenlese','setplan" data-p="LARGE')}${radio(t==='SMALL','Kleine Flächenlese','setplan" data-p="SMALL')}${custom}
+    <div style="height:16px"></div><button class="btn tonal" style="width:100%;border-radius:12px" data-a="newplan">${ic('add')} Neuen Leseplan erstellen (.csv)</button></div>
+  <div class="card"><h3>Bibel-Übersetzung</h3><div class="sub">Standard-Übersetzung für YouVersion / bible.com</div><div style="height:12px"></div>
+    ${TRANSLATIONS.map(([id,n]) => radio(tid===id, esc(n), 'settr" data-id="'+id+'" data-n="'+esc(n))).join('')}</div>
+  <div class="card"><div class="row">${ic('bell',24,'prim')}<h3>Tägliche Erinnerung</h3></div><div class="sub">Trägt einen täglichen Termin mit Erinnerung in deinen Handy-Kalender ein. Deine Daten bleiben trotzdem nur in der App.</div><div style="height:12px"></div>
+    <div class="row"><span style="flex:1">Uhrzeit</span><input type="time" id="remTime" value="${pad(P.morning_hour ?? 8)}:${pad(P.morning_minute ?? 0)}" class="inp" style="width:150px;padding:10px 12px;border-radius:12px;color-scheme:dark"></div>
+    <div style="height:12px"></div><button class="btn tonal" style="width:100%;border-radius:12px" data-a="ics">${ic('cal')} Zum Kalender hinzufügen</button>
+    <div class="small muted" style="margin-top:8px;line-height:1.5">iPhone: „Hinzufügen“ bestätigen. Android: die Datei mit deiner Kalender-App öffnen. Zum Ändern der Uhrzeit den alten Termin im Kalender löschen und neu hinzufügen.</div></div>
+  <div class="card"><h3>Daten &amp; Backup</h3><div class="sub">Deine Daten liegen nur auf diesem Gerät. Sichere sie regelmäßig, z. B. in Google Drive oder iCloud Drive. Gleiches CSV-Format wie die Android-App („CSV Export“) – so kannst du Daten zwischen beiden übertragen.</div><div style="height:12px"></div>
+    <div class="small" style="margin-bottom:12px;line-height:1.6">${backupInfo()}</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <button class="btn tonal" style="border-radius:12px" data-a="csvexport">${ic('download')} Backup speichern (CSV)</button>
+      <button class="btn tonal" style="border-radius:12px" data-a="csvimport">${ic('upload')} Backup / CSV importieren</button>
+      <button class="btn tonal" style="border-radius:12px" data-a="pdf">${ic('print')} Jahresübersicht als PDF</button>
+    </div></div>
+  <div class="card"><div class="row">${ic('phone',24,'prim')}<h3>Als App installieren</h3></div><div style="height:8px"></div>
+    ${isStandalone() ? '<div class="small" style="color:var(--primary)">✓ Flächenlese läuft als installierte App.</div>' : `${deferredInstall ? `<button class="btn" style="width:100%;border-radius:12px;margin-bottom:10px" data-a="install">${ic('download')} Jetzt installieren</button>` : ''}<div class="small muted" style="line-height:1.6"><b>Android (Chrome):</b> Menü ⋮ → „App installieren“ bzw. „Zum Startbildschirm hinzufügen“.<br><b>iPhone (Safari):</b> Teilen-Symbol → „Zum Home-Bildschirm“.<br>${isIOS() ? '<b style="color:var(--error)">Wichtig am iPhone:</b> Safari und die Home-Bildschirm-App haben getrennte Speicher. Nutze nur noch die App vom Home-Bildschirm.' : 'Danach startet Flächenlese wie eine normale App, auch offline.'}</div>`}
+    <div class="small muted" style="margin-top:10px">Dauerhafter Speicher: ${storagePersisted === true ? '<span style="color:var(--primary)">aktiv ✓</span>' : storagePersisted === false ? 'nicht bestätigt (nach der Installation meist aktiv)' : 'unbekannt'}</div></div>
+  <div class="card"><h3>Alle Daten löschen</h3><div class="sub">Lesefortschritt, Notizen und eigene Pläne auf diesem Gerät entfernen.</div><div style="height:12px"></div>
+    <button class="btn" style="background:var(--error);color:#690005;border-radius:12px;width:100%" data-a="reset">${ic('del')} Daten zurücksetzen</button></div>
+  <div class="center small muted" style="padding:8px 0 16px">Flächenlese Web · Version 1.0</div></div>`;
+}
+
+/* ================= DIALOGE ================= */
+function planSwitcher(){
+  const t = planType(); const hs = P.hotswap_plans || [];
+  const opt = (id, name) => `<div class="popt ${t===id?'sel':''}" data-pid="${esc(id)}"><span class="rdot ${t===id?'on':''}"></span><span style="flex:1">${esc(name)}</span><button class="hs ${hs.includes(id)?'on':''}" data-hs="${esc(id)}">${ic('sync')}</button></div>`;
+  const cust = customIds();
+  const ov = dialog('<b>Leseplan wechseln</b>', `<div class="small" style="color:#9e9e9e">Doppeltipp auf Name hotswappt zwischen markierten (${ic('sync',14)}) Plänen.</div>${opt('LARGE','Große Flächenlese')}${opt('SMALL','Kleine Flächenlese')}${cust.length ? `<hr><div style="font-size:12px;color:var(--primary)">Eigene Pläne</div>${cust.map(id => opt('CUSTOM_'+id, customName(id))).join('')}` : ''}`, [{label:'Schließen'}]);
+  ov.querySelector('.body').style.gap = '8px';
+  ov.addEventListener('click', e => {
+    const hsb = e.target.closest('[data-hs]');
+    if(hsb){ e.stopPropagation(); const id = hsb.dataset.hs; let h = [...(P.hotswap_plans||[])]; if(h.includes(id)) h = h.filter(x => x!==id); else { if(h.length >= 2) h.shift(); h.push(id); } P.hotswap_plans = h; save(); ov.close(); planSwitcher(); return; }
+    const o = e.target.closest('[data-pid]'); if(o){ P.plan_type = o.dataset.pid; save(); ov.close(); render(true); }
+  });
+}
+function hotswap(){
+  const hs = P.hotswap_plans || [], t = planType();
+  if(hs.length === 2) P.plan_type = t === hs[0] ? hs[1] : hs[0];
+  else if(hs.length === 1) P.plan_type = t !== hs[0] ? hs[0] : 'LARGE';
+  else { if(!t.startsWith('CUSTOM_')){ const c = customIds()[0]; if(c) P.plan_type = 'CUSTOM_'+c; } else P.plan_type = 'LARGE'; }
+  save(); render(true); toast(planLabel(planType()));
+}
+function weeklyViewDialog(a){
+  const r = getN('wr', a), v = getN('wv', a), n = weeklyNote(a);
+  const ov = dialog(`<div class="row" style="justify-content:space-between">${refLink(r,'').replace(/^<(a|span) /, '<$1 style="font-size:24px;font-weight:700;flex:1;white-space:pre-line;color:var(--on)" ')}<button class="ibtn" style="color:var(--onsv)" id="wvEdit">${ic('edit')}</button></div>`,
+    (v ? `<div style="font-size:16px;line-height:28px;font-style:italic;color:var(--on);white-space:pre-line">${esc(v)}</div>` : (!n ? '<div>Kein Vers-Text eingegeben.</div>' : '')) +
+    (n ? `<hr><div style="font-size:11px;color:var(--primary)">Notizen vom Tag:</div><div style="color:var(--on);line-height:20px;white-space:pre-line">${esc(n)}</div>` : ''), [{label:'Schließen'}]);
+  ov.querySelector('#wvEdit').onclick = () => { ov.close(); weeklyEditDialog(a); };
+}
+function weeklyEditDialog(a){
+  const mon = mondayOf(a); let R = getN('wr', a), V = getN('wv', a), SRC = getN('ws', a);
+  const cards = [...Array(7)].map((_,i) => addDays(mon, i)).map(d => { const r = getN('r', d), v = getN('v', d); if(!r) return '';
+    return `<button class="ocard ${R===r?'sel':''}" data-dd="${iso(d)}"><div style="font-size:11px;color:var(--secondary)">${WD[dow(d)-1]}, ${d.d}.</div><div style="font-weight:700;margin-top:4px;white-space:pre-line">${esc(r)}</div>${v ? `<div class="clamp" style="-webkit-line-clamp:3;margin-top:2px">${esc(v)}</div>` : ''}</button>`; }).join('');
+  const commit = () => { saveWeekly(a, R, V, SRC); render(true); };
+  const ov = dialog('Wochenvers wählen', `<div style="color:var(--primary);font-weight:500">Wähle einen Vers der Woche:</div>${cards || '<div class="small">Diese Woche gibt es noch keine Tagesverse.</div>'}<hr><div style="font-weight:500">Manuelle Bearbeitung:</div>
+    <div class="fld"><label style="background:var(--sc-high)">Bibelstelle</label><input id="wR" value="${esc(R)}"></div><div class="fld"><label style="background:var(--sc-high)">Vers-Text</label><textarea id="wV" style="min-height:80px">${esc(V)}</textarea></div>`,
+    [{label:'Fertig'}], {onClose: commit});
+  ov.querySelectorAll('[data-dd]').forEach(b => b.onclick = () => { const d = parseIso(b.dataset.dd); R = getN('r', d); V = getN('v', d); SRC = `${d.y}_${d.m}_${d.d}`; ov.querySelector('#wR').value = R; ov.querySelector('#wV').value = V; ov.querySelectorAll('[data-dd]').forEach(x => x.classList.toggle('sel', x === b)); });
+  ov.querySelector('#wR').oninput = e => { R = e.target.value; SRC = ''; };
+  ov.querySelector('#wV').oninput = e => { V = e.target.value; SRC = ''; };
+}
+function monthlyEditDialog(y, m){
+  let R = getMon('mr', y, m), V = getMon('mv', y, m);
+  const cards = sundaysOf(y, m).map(s => { const r = getN('wr', s), v = getN('wv', s); if(!r) return '';
+    return `<button class="ocard ${R===r?'sel':''}" data-dd="${iso(s)}"><div style="font-weight:700;font-size:13px">${esc(r)}</div>${v ? `<div class="clamp" style="-webkit-line-clamp:2;font-size:11px">${esc(v)}</div>` : ''}</button>`; }).join('');
+  const ov = dialog(`Monatsvers ${MN[m-1]}`, `<div style="font-weight:500">Wähle einen Vers aus dem Monat:</div>${cards}<hr><div class="fld"><label style="background:var(--sc-high)">Bibelstelle</label><input id="mR" value="${esc(R)}"></div><div class="fld"><label style="background:var(--sc-high)">Vers-Text</label><textarea id="mV" style="min-height:100px">${esc(V)}</textarea></div>`,
+    [{label:'Abbrechen'},{label:'Speichern', filled:true, onClick: o => { saveMonthly(y, m, o.querySelector('#mR').value, o.querySelector('#mV').value); render(true); }}]);
+  ov.querySelectorAll('[data-dd]').forEach(b => b.onclick = () => { const s = parseIso(b.dataset.dd); ov.querySelector('#mR').value = getN('wr', s); ov.querySelector('#mV').value = getN('wv', s); ov.querySelectorAll('[data-dd]').forEach(x => x.classList.toggle('sel', x === b)); });
+}
+function yearlyViewDialog(y){
+  const r = getYear('yr', y), v = getYear('yv', y);
+  const ov = dialog(`<div class="row" style="justify-content:space-between">${refLink(r,'').replace(/^<(a|span) /, '<$1 style="font-size:24px;font-weight:700;flex:1;color:var(--on)" ')}<button class="ibtn" style="color:var(--onsv)" id="yvEdit">${ic('edit')}</button></div>`,
+    `<div style="font-size:12px;color:var(--primary)">Jahresvers ${y}</div>${v ? `<div style="font-size:16px;line-height:28px;font-style:italic;color:var(--on);white-space:pre-line">${esc(v)}</div>` : '<div>Kein Vers-Text eingegeben.</div>'}`, [{label:'Schließen'}]);
+  ov.querySelector('#yvEdit').onclick = () => { ov.close(); yearlyEditDialog(y); };
+}
+function yearlyEditDialog(y){
+  const R = getYear('yr', y), V = getYear('yv', y);
+  const cards = MN.map((n,i) => { const r = getMon('mr', y, i+1), v = getMon('mv', y, i+1); if(!r) return '';
+    return `<button class="ocard ${R===r?'sel':''}" data-m="${i+1}"><div style="font-size:11px;color:var(--primary)">${n}</div><div style="font-weight:700;font-size:13px">${esc(r)}</div>${v ? `<div class="clamp" style="-webkit-line-clamp:2;font-size:11px">${esc(v)}</div>` : ''}</button>`; }).join('');
+  const ov = dialog(`Jahresvers ${y}`, `<div style="font-weight:500">Wähle einen Vers aus dem Jahr:</div>${cards}<hr><div class="fld"><label style="background:var(--sc-high)">Bibelstelle</label><input id="yR" value="${esc(R)}"></div><div class="fld"><label style="background:var(--sc-high)">Vers-Text</label><textarea id="yV" style="min-height:100px">${esc(V)}</textarea></div>`,
+    [{label:'Abbrechen'},{label:'Speichern', filled:true, onClick: o => { saveYearly(y, o.querySelector('#yR').value, o.querySelector('#yV').value); render(true); }}]);
+  ov.querySelectorAll('[data-m]').forEach(b => b.onclick = () => { const m = +b.dataset.m; ov.querySelector('#yR').value = getMon('mr', y, m); ov.querySelector('#yV').value = getMon('mv', y, m); ov.querySelectorAll('[data-m]').forEach(x => x.classList.toggle('sel', x === b)); });
+}
+function textDialog(text, a, editTarget){
+  const ov = dialog('<span style="color:var(--primary)">Notiz</span>', `<div style="max-height:400px;overflow:auto;font-size:16px;line-height:24px;color:var(--on);white-space:pre-line">${esc(text)}</div>`,
+    [{label:'Bearbeiten', onClick: () => push({name:'note', date:a, startEdit:true})},{label:'OK'}]);
+}
+function yvPick(ref){
+  const parts = splitPassages(ref);
+  dialog('Stelle wählen', parts.map(p => { const u = bibleUrl(p); return u ? `<a class="ocard" href="${u}" target="_blank" rel="noopener" style="font-weight:700">${esc(p)}</a>` : `<div class="ocard">${esc(p)}</div>`; }).join(''), [{label:'Abbrechen'}]);
+}
+function autofillDialog(r){
+  const o = { link: P.autofill_remove_link ?? true, num: P.autofill_remove_verse_num ?? true, tr: P.autofill_remove_translation ?? true, colon: P.autofill_replace_colon ?? true, quotes: P.autofill_remove_quotes ?? true, clip: P.autofill_copy_to_clipboard ?? false };
+  const labels = [['link','Link entfernen'],['num','Versnummer entfernen [1]'],['tr','Übersetzung entfernen (bibel.heute)'],['colon','Doppelpunkt zu Komma (19:1 -> 19,1)'],['quotes','Anführungszeichen entfernen'],['clip','In Zwischenablage kopieren']];
+  const ov = dialog('<b>Bibelstelle einfügen</b>', `<div style="position:relative"><textarea class="inp" id="afT" placeholder="Text hier einfügen..." style="height:150px;border-radius:12px;resize:none"></textarea></div>
+    <div>${labels.map(([k,l]) => `<button class="radio" data-k="${k}" style="font-size:14px;padding:6px 0"><span class="chk ${o[k]?'on':''}">${o[k]?ic('check'):''}</span>${l}</button>`).join('')}</div>`,
+    [{label:'Abbrechen'},{label:'Autofill', filled:true, onClick: ov2 => {
+      const text = ov2.querySelector('#afT').value; if(!text.trim()) return false;
+      const res = runAutofill(text, o);
+      r.inR = res.refs; r.inV = res.verses;
+      Object.assign(P, {autofill_remove_link:o.link, autofill_remove_verse_num:o.num, autofill_remove_translation:o.tr, autofill_replace_colon:o.colon, autofill_copy_to_clipboard:o.clip, autofill_remove_quotes:o.quotes}); save();
+      if(o.clip) copyText(res.combined);
+      render(true);
+    }}]);
+  ov.querySelector('.body').style.gap = '8px';
+  ov.querySelectorAll('[data-k]').forEach(b => b.onclick = () => { const k = b.dataset.k; o[k] = !o[k]; const c = b.querySelector('.chk'); c.classList.toggle('on', o[k]); c.innerHTML = o[k] ? ic('check') : ''; });
+}
+function runAutofill(input, o){
+  const lines = input.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  const names = Object.keys(BOOKS).sort((a,b) => b.length - a.length);
+  const isRef = l => names.some(n => l.toLowerCase().startsWith(n.toLowerCase()));
+  const blocks = []; let cur = [];
+  for(const l of lines){ const link = l.startsWith('http'); if(!link && isRef(l) && cur.length){ blocks.push(cur); cur = []; } cur.push(l); }
+  if(cur.length) blocks.push(cur);
+  const refs = [], verses = [];
+  for(const b of blocks){
+    let ref = '', vl = [];
+    if(isRef(b[0])){ ref = b[0]; b.slice(1).forEach(x => { if(!x.startsWith('http')) vl.push(x); }); }
+    else { const i = b.findIndex(isRef); if(i !== -1){ ref = b[i]; b.forEach((x,j) => { if(j !== i && !x.startsWith('http')) vl.push(x); }); } else b.forEach(x => { if(!x.startsWith('http')) vl.push(x); }); }
+    let pr = ref.trim();
+    if(pr){ if(o.tr){ const p = pr.split(' '); if(p.length > 2) pr = p.slice(0,-1).join(' '); } if(o.colon) pr = pr.replace(/:/g, ','); refs.push(pr); }
+    let v = vl.join(' ').trim();
+    if(o.num) v = v.replace(/^\s*[„"'“«»‹›]*\s*\[\d+\]\s*/, '').trim();
+    if(o.quotes){ const q = `"'„“”‘’«»‹›`; while(v && q.includes(v[0])) v = v.slice(1).trim(); while(v && q.includes(v[v.length-1])) v = v.slice(0,-1).trim(); }
+    if(v) verses.push(v);
+  }
+  let combined = ''; const n = Math.max(refs.length, verses.length);
+  for(let i=0;i<n;i++){ if(i<refs.length) combined += refs[i] + '\n'; if(i<verses.length) combined += o.quotes ? verses[i] : `'${verses[i]}'`; if(i<n-1) combined += '\n\n'; }
+  return {refs: refs.join('\n'), verses: verses.join('\n\n'), combined};
+}
+
+/* ================= CSV: Export / Import (kompatibel zur Android-App) ================= */
+function exportCsv(){
+  const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const head = ["Plan","Datum","Plan-Leseabschnitt","Eigene-Referenz","Tagesvers","Notiz","Gelesen","Wochen-Stelle","Wochen-Vers","Wochen-Notiz","Monats-Stelle","Monats-Vers","Jahres-Stelle","Jahres-Vers"];
+  let out = '﻿' + head.map(h => `"${h}"`).join(';') + '\r\n';
+  const mh = P.morning_hour ?? 8, mm = P.morning_minute ?? 0, eh = P.evening_hour ?? 20, em = P.evening_minute ?? 0;
+  out += ['_CONFIG_','','Settings',`Morning:${mh}:${mm}:${!!P.morning_enabled}`,`Evening:${eh}:${em}:${!!P.evening_enabled}`,`PreferBrowser:${!!P.prefer_browser}`,`ActivePlan:${planType()}`,'','','','','','',''].map(q).join(';') + '\r\n';
+  for(const id of customIds()) out += ['_PLAN_DEF_', id, customName(id), String(P['custom_start_'+id] ?? 0), P['custom_data_'+id] ?? '', `Repeat:${!!P['custom_repeat_'+id]}`,'','','','','','','',''].map(q).join(';') + '\r\n';
+  const plans = ['LARGE','SMALL', ...customIds().map(id => 'CUSTOM_'+id)];
+  for(const plan of plans){
+    const pre = prefix(plan);
+    const reads = new Set((P[readKey(plan)] || []).map(s => s.length === 5 ? '2026-' + s : s));
+    const dates = new Set(reads);
+    for(const k of Object.keys(P)){
+      const old = plan==='LARGE' && !k.includes('_L_') && !k.includes('_S_') && !k.includes('_C_');
+      const p = k.split('_');
+      try{
+        if(k.startsWith(`mr_${pre}_`) || k.startsWith(`mv_${pre}_`)) dates.add(`${p[p.length-2].padStart(4,'0')}-${pad(+p[p.length-1])}-01`);
+        else if(k.startsWith(`yr_${pre}_`) || k.startsWith(`yv_${pre}_`)) dates.add(`${p[p.length-1]}-01-01`);
+        else if(['r','v','n','wr','wv','wn'].some(x => k.startsWith(`${x}_${pre}_`)) || (old && /^(r|v|n)_\d/.test(k))) dates.add(`${p[p.length-3]}-${pad(+p[p.length-2])}-${pad(+p[p.length-1])}`);
+      }catch(e){}
+    }
+    for(const ds of [...dates].filter(s => /^\d{4}-\d{2}-\d{2}$/.test(s)).sort()){
+      const a = parseIso(ds); const {y,m,d} = a;
+      const g = k => P[`${k}_${pre}_${y}_${m}_${d}`] ?? (plan==='LARGE' && ['r','v','n'].includes(k) ? P[`${k}_${y}_${m}_${d}`] : null) ?? '';
+      let pp = ''; try{ pp = planPassage(a, plan); if(['Plan beendet','Kein Eintrag','Kein Plan geladen'].includes(pp)) pp = ''; }catch(e){}
+      out += [plan, ds, pp, g('r'), g('v'), g('n'), reads.has(ds) ? 'x' : '', g('wr'), g('wv'), g('wn'),
+        d===1 ? (P[`mr_${pre}_${y}_${m}`] ?? '') : '', d===1 ? (P[`mv_${pre}_${y}_${m}`] ?? '') : '',
+        d===1&&m===1 ? (P[`yr_${pre}_${y}`] ?? '') : '', d===1&&m===1 ? (P[`yv_${pre}_${y}`] ?? '') : ''].map(q).join(';') + '\r\n';
+    }
+  }
+  const t = new Date(); const ts = `${t.getFullYear()}${pad(t.getMonth()+1)}${pad(t.getDate())}_${pad(t.getHours())}${pad(t.getMinutes())}`;
+  saveFile(`flchenlese_data_export_${ts}.csv`, out, 'text/csv', true).then(ok => { if(ok){ P.last_backup = Date.now(); save(); toast('✅ Backup erstellt'); if(current().name === 'settings') render(true); } });
+}
+function parseCsv(text){
+  if(text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+  const firstLine = text.split(/\r?\n/)[0];
+  const delim = firstLine.includes(';') ? ';' : firstLine.includes('\t') ? '\t' : ',';
+  const rows = []; let row = [], f = '', q = false;
+  for(let i=0;i<text.length;i++){
+    const c = text[i];
+    if(q){ if(c === '"'){ if(text[i+1] === '"'){ f += '"'; i++; } else q = false; } else f += c; }
+    else if(c === '"') q = true;
+    else if(c === delim){ row.push(f); f = ''; }
+    else if(c === '\n' || c === '\r'){ if(c === '\r' && text[i+1] === '\n') i++; row.push(f); rows.push(row); row = []; f = ''; }
+    else f += c;
+  }
+  if(f !== '' || row.length){ row.push(f); rows.push(row); }
+  const cols = (rows.shift() || []).map(c => c.trim().replace(/^"|"$/g, '').toLowerCase());
+  return rows.filter(r => r.some(x => x.trim())).map(r => { const o = {}; cols.forEach((c,i) => { if(i < r.length) o[c] = r[i]; }); return o; });
+}
+function parseFlexDate(raw){
+  raw = raw.trim(); let m;
+  const ok = (y,mo,d) => { if(mo<1||mo>12||d<1||d>31) return null; const t = new Date(y, mo-1, d, 12); return t.getMonth() === mo-1 ? {y,m:mo,d} : null; };
+  if((m = raw.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})$/))) return ok(+m[1], +m[2], +m[3]);
+  if((m = raw.match(/^(\d{1,2})\.(\d{1,2})\.(\d{2,4})$/))){ let y = +m[3]; if(y < 100) y += 2000; return ok(y, +m[2], +m[1]); }
+  if((m = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/))){ let y = +m[3]; if(y < 100) y += 2000; return ok(y, +m[1], +m[2]); }
+  return null;
+}
+function normalizePlan(p){
+  const u = p.toUpperCase().trim();
+  if(p.trim().toUpperCase().startsWith('CUSTOM_')) return 'CUSTOM_' + p.trim().slice(7);
+  if(u==='LARGE'||u==='L'||u.includes('GROSS')||u.includes('GROß')||u.includes('LARGE')) return 'LARGE';
+  if(u==='SMALL'||u==='S'||u.includes('KLEIN')||u.includes('SMALL')) return 'SMALL';
+  if(u==='CUSTOM'||u==='C'||u.includes('EIGEN')) return 'CUSTOM';
+  return 'LARGE';
+}
+function importCsv(rows){
+  let n = 0; const cur = planType();
+  const g = (row,k) => row[k] != null ? row[k].trim().replace(/^"|"$/g, '') : null;
+  const idMap = {};
+  for(const row of rows){
+    const planRaw = g(row,'plan');
+    if(planRaw === '_CONFIG_'){
+      const mo = (g(row,'tagesvers')||'').split(':'), ev = (g(row,'notiz')||'').split(':'), br = (g(row,'gelesen')||'').split(':'), ap = (g(row,'wochen-stelle')||'').split(':');
+      if(mo.length===4){ P.morning_hour=+mo[1]; P.morning_minute=+mo[2]; P.morning_enabled = mo[3]==='true'; }
+      if(ev.length===4){ P.evening_hour=+ev[1]; P.evening_minute=+ev[2]; P.evening_enabled = ev[3]==='true'; }
+      if(br.length===2) P.prefer_browser = br[1]==='true';
+      if(ap.length===2 && ap[1]) P.plan_type = ap[1];
+      continue;
+    }
+    if(planRaw === '_PLAN_DEF_'){
+      const id = g(row,'datum'); if(!id) continue;
+      const ids = new Set(customIds()); ids.add(id); P.custom_plan_ids = [...ids];
+      P['custom_name_'+id] = g(row,'plan-leseabschnitt') || g(row,'bibelstelle') || 'Unbenannter Plan';
+      P['custom_start_'+id] = Number(g(row,'eigene-referenz')) || Number(g(row,'tagesvers')) || 0;
+      P['custom_data_'+id] = row['tagesvers'] ?? row['notiz'] ?? '';
+      P['custom_repeat_'+id] = /true/i.test(g(row,'notiz') || g(row,'gelesen') || '');
+      continue;
+    }
+    let plan = !planRaw ? cur : normalizePlan(planRaw);
+    if(plan.startsWith('CUSTOM_')){ const id = plan.slice(7); const real = customIds().find(x => x.toUpperCase() === id.toUpperCase()); if(real) plan = 'CUSTOM_' + real; }
+    const raw = g(row,'datum'); if(!raw) continue;
+    const a = parseFlexDate(raw); if(!a) continue;
+    const pre = prefix(plan), {y,m,d} = a;
+    const set = (k, key) => { if(key in row && row[key] != null) P[`${k}_${pre}_${y}_${m}_${d}`] = row[key].trim(); };
+    if('eigene-referenz' in row) set('r','eigene-referenz'); else if('bibelstelle' in row) set('r','bibelstelle');
+    set('v','tagesvers'); set('n','notiz'); set('wr','wochen-stelle'); set('wv','wochen-vers'); set('wn','wochen-notiz');
+    if(g(row,'monats-stelle')) P[`mr_${pre}_${y}_${m}`] = row['monats-stelle'].trim();
+    if(g(row,'monats-vers')) P[`mv_${pre}_${y}_${m}`] = row['monats-vers'].trim();
+    if(g(row,'jahres-stelle')) P[`yr_${pre}_${y}`] = row['jahres-stelle'].trim();
+    if(g(row,'jahres-vers')) P[`yv_${pre}_${y}`] = row['jahres-vers'].trim();
+    if('gelesen' in row){ const k = readKey(plan), s = getSet(k), ds = iso(a); if(['x','v','1','ja','yes','true','checked'].includes((g(row,'gelesen')||'').toLowerCase())) s.add(ds); else s.delete(ds); putSet(k, s); }
+    n++;
+  }
+  save(); return n;
+}
+function clearReadingData(){
+  for(const k of Object.keys(P)){ if(/^(read_days|small_read_days|custom_read_days|custom_read_.+)$/.test(k) || /^(r|v|n|wr|wv|wn|ws|mr|mv|yr|yv)_/.test(k)) delete P[k]; }
+}
+
+/* ================= PDF / Drucken ================= */
+function buildPrint(year){
+  const t = planType(), pre = prefix(t); let pages = '';
+  let mon = mondayOf({y:year, m:1, d:1});
+  while(true){
+    const days = [...Array(7)].map((_,i) => addDays(mon, i)); const sun = days[6];
+    if(mon.y > year) break;
+    const has = days.some(a => isRead(a) || getN('r',a) || getN('v',a) || getN('n',a)) || getN('wr', sun) || getN('wv', sun);
+    if(has && (days.some(a => a.y === year))){
+      const rows = days.map(a => `<tr><td><b style="color:#777;font-size:8px">${WD[dow(a)-1].toUpperCase()}</b><br><b style="color:#003D29">${pad(a.d)}.${pad(a.m)}.</b>${isRead(a) ? ' ✓' : ''}</td><td><b>${esc(splitPassages(effPassage(a)).join('\n'))}</b></td><td>${getN('r',a) ? `<b>${esc(getN('r',a))}</b>\n` : ''}${esc(getN('v',a))}</td><td>${esc(getN('n',a))}</td></tr>`).join('');
+      const wr = getN('wr', sun), wv = getN('wv', sun), wn = weeklyNote(sun);
+      pages += `<div class="pw"><h2>KW ${isoWeek(mon)} <span>${MN[sun.m-1]} ${sun.y}</span></h2><table><tr><th style="width:12%">TAG</th><th style="width:22%">STELLE</th><th style="width:33%">VERS</th><th>NOTIZ</th></tr>${rows}</table>
+        ${wr ? `<div class="wv"><b style="color:#003D29">WOCHENVERS: ${esc(wr)}</b>${wv ? `<div style="font-style:italic;margin-top:4px">${esc(wv)}</div>` : ''}${wn ? `<div style="margin-top:4px">Notiz: ${esc(wn)}</div>` : ''}</div>` : ''}</div>`;
+    }
+    mon = addDays(mon, 7);
+  }
+  return pages || '<div class="pw">Keine Einträge für dieses Jahr gefunden.</div>';
+}
+async function exportPdf(){
+  const y = today().y; const content = buildPrint(y);
+  const inArtifact = !!(window.claude && typeof window.claude.use === 'function');
+  if(!inArtifact){ $('#print').innerHTML = content; setTimeout(() => { try{ window.print(); }catch(e){ toast('Drucken nicht möglich'); } }, 50); return; }
+  const css = [...document.querySelectorAll('style')].map(s => s.textContent).join('\n').match(/\.pw[\s\S]*?(?=\n<\/style>|$)/);
+  const doc = `<!DOCTYPE html><html lang="de"><head><meta charset="utf-8"><title>Flächenlese ${y}</title><style>body{margin:16px}.pw{page-break-after:always;font-family:Roboto,Arial,sans-serif;padding:8px;margin-bottom:24px}.pw h2{margin:0 0 4px;font-size:22px;display:flex;justify-content:space-between}.pw h2 span{font-size:14px;color:#777;font-weight:400}.pw table{width:100%;border-collapse:collapse;font-size:10px}.pw th{background:#003D29;color:#fff;text-align:left;padding:6px;-webkit-print-color-adjust:exact;print-color-adjust:exact}.pw td{border:1px solid #ccc;padding:6px;vertical-align:top;white-space:pre-line}.pw .wv{margin-top:10px;border:1px solid #003D29;border-radius:6px;padding:10px;font-size:11px}</style></head><body onload="setTimeout(()=>print(),300)">${content}</body></html>`;
+  const ok = await saveFile(`Flaechenlese_${y}.html`, doc, 'text/html');
+  if(ok) toast('Datei öffnen und „Drucken → Als PDF speichern“ wählen');
+}
+
+/* ================= AKTIONEN ================= */
+const dateOf = el => parseIso(el.dataset.date);
+const clampDate = a => a.d > lenMonth(a.y, a.m) ? {y:a.y, m:a.m, d:lenMonth(a.y, a.m)} : a;
+const ACT = {
+  tab(el){
+    const id = el.dataset.tab, now = Date.now(), dbl = now - (lastNavTap[id] || 0) < 400; lastNavTap[id] = now;
+    if(dbl){ if(id==='home') S.homeOff = 0; if(id==='calendar') S.calOff = 0; if(id==='overview'){ S.ovTab = 0; S.ovOff[0] = 0; } }
+    const was = tab; tab = id; stack = [];
+    if(was !== id || dbl) render();
+  },
+  pg(el){ const d = +el.dataset.d; if(pagerStep){ pendingSlide = d; pagerStep(d); } },
+  back(){ goBack(); },
+  toggle(el){ toggleRead(dateOf(el)); render(true); },
+  note(el){ push({name:'note', date: dateOf(el)}); },
+  planchip(){ tapOrDouble('chip', planSwitcher, hotswap); },
+  wedit(el){ weeklyEditDialog(dateOf(el)); },
+  wview(el){ weeklyViewDialog(dateOf(el)); },
+  wshare(el){
+    const a = dateOf(el), r = getN('wr',a), v = getN('wv',a), n = weeklyNote(a);
+    let t = `Wochenvers: ${r}\n`; if(v) t += v + '\n'; if(n) t += `\nNotiz:\n${n}`; t = t.trim();
+    if(navigator.share){ navigator.share({text:t}).catch(() => copyText(t)); } else copyText(t);
+  },
+  yvpick(el){ yvPick(el.dataset.ref); },
+  calmonth(el){ const t = today(); const cur = addMonths({y:t.y, m:t.m, d:1}, S.calOff); S.calOff += (+el.dataset.m - cur.m); render(); },
+  calday(el){
+    const raw = dateOf(el);
+    tapOrDouble('cal'+el.dataset.date, () => push({name:'day', date: clampDate(raw), off:0}), () => { toggleRead(raw); render(true); });
+  },
+  ovtab(el){ const i = +el.dataset.i, now = Date.now(), k = 'ov'+i; if(now - (lastNavTap[k]||0) < 400) S.ovOff[i] = 0; lastNavTap[k] = now; S.ovTab = i; render(); },
+  wkverse(el, e){ if(e.target.closest('a')) return; const a = dateOf(el), v = getN('v', a); if(!v) push({name:'note', date:a, startEdit:true}); else textDialog(v, a); },
+  wknote(el){ const a = dateOf(el), n = getN('n', a); if(!n) push({name:'note', date:a}); else textDialog(n, a); },
+  medit(el){ monthlyEditDialog(+el.dataset.y, +el.dataset.m); },
+  yview(el){ yearlyViewDialog(+el.dataset.y); },
+  yedit(el){ yearlyEditDialog(+el.dataset.y); },
+  splan(el){ S.searchPlan = el.dataset.id; document.querySelectorAll('.fchip').forEach(c => { const on = c.dataset.id === S.searchPlan; c.classList.toggle('sel', on); c.innerHTML = (on ? ic('check',18) : '') + esc(c.textContent); }); renderResults(); },
+  openday(el){ push({name:'day', date: clampDate(dateOf(el)), off:0}); },
+  nedit(){ const r = current(); r.edit = true; r.inR = getN('r', r.date); r.inV = getN('v', r.date); r.inN = getN('n', r.date); render(); },
+  nsave(){ const r = current(); saveNote(r.date, r.inR, r.inV, r.inN); r.edit = false; render(); toast('Gespeichert'); },
+  autofill(){ autofillDialog(current()); },
+  setplan(el){ P.plan_type = el.dataset.p; save(); render(true); },
+  settr(el){ P.translation_id = +el.dataset.id; P.translation_name = el.dataset.n; save(); render(true); },
+  plancfg(el){
+    const id = el.dataset.id; let rep = !!P['custom_repeat_'+id];
+    const ov = dialog('Leseplan-Einstellungen', `<div style="font-size:16px;color:var(--on)">Plan: ${esc(customName(id))}</div><button class="radio" id="rp"><span class="chk ${rep?'on':''}">${rep?ic('check'):''}</span>Plan endlos wiederholen</button>`,
+      [{label:'Abbrechen'},{label:'Speichern', filled:true, onClick: () => { P['custom_repeat_'+id] = rep; save(); render(true); }}]);
+    ov.querySelector('#rp').onclick = () => { rep = !rep; const c = ov.querySelector('.chk'); c.classList.toggle('on', rep); c.innerHTML = rep ? ic('check') : ''; };
+  },
+  plandel(el){
+    const id = el.dataset.id;
+    confirmDialog('Plan löschen?', `„${customName(id)}“ und dessen Lesefortschritt werden gelöscht.`, 'Löschen', () => {
+      P.custom_plan_ids = customIds().filter(x => x !== id);
+      ['custom_name_','custom_data_','custom_start_','custom_repeat_','custom_read_'].forEach(k => delete P[k+id]);
+      if(planType() === 'CUSTOM_'+id) P.plan_type = 'LARGE';
+      P.hotswap_plans = (P.hotswap_plans||[]).filter(x => x !== 'CUSTOM_'+id);
+      save(); render(true);
+    });
+  },
+  newplan(){ const f = $('#fileCsvPlan'); f.value = ''; f.click(); },
+  csvexport(){ exportCsv(); },
+  csvimport(){ const f = $('#fileBackup'); f.value = ''; f.click(); },
+  pdf(){ exportPdf(); },
+  ics(){ makeIcs(); },
+  install(){ if(deferredInstall){ deferredInstall.prompt(); deferredInstall.userChoice.finally(() => { deferredInstall = null; render(true); }); } },
+  dismissInstall(){ P.install_hint_dismissed = true; save(); render(true); },
+  reset(){ confirmDialog('Alle Daten löschen?', 'Lesefortschritt, Notizen, Verse und eigene Pläne auf diesem Gerät werden gelöscht. Das kann nicht rückgängig gemacht werden.', 'Löschen', () => { P = {}; save(); S.homeOff = 0; render(); toast('Alle Daten gelöscht'); }); }
+};
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-a]'); if(!el) return;
+  if(el.tagName === 'A' && el.getAttribute('href')) return;
+  const fn = ACT[el.dataset.a]; if(fn){ e.preventDefault(); fn(el, e); }
+});
+
+/* Neuer eigener Leseplan (wie Android: Datei → Name → Startdatum → Wiederholung) */
+$('#fileCsvPlan').addEventListener('change', async e => {
+  const file = e.target.files[0]; if(!file) return;
+  const csv = await file.text();
+  const t = today();
+  const ov = dialog('Plan benennen', `<div class="fld"><label style="background:var(--sc-high)">Name des Leseplans</label><input id="pn" value="Mein Leseplan"></div><div class="fld"><label style="background:var(--sc-high)">Startdatum</label><input id="pd" type="date" value="${iso(t)}" style="color-scheme:dark"></div>`,
+    [{label:'Abbrechen'},{label:'Weiter', filled:true, onClick: o => {
+      const name = o.querySelector('#pn').value.trim() || 'Mein Leseplan'; const dv = o.querySelector('#pd').value; const start = dv ? parseIso(dv) : t;
+      const add = rep => {
+        const id = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()));
+        P.custom_plan_ids = [...customIds(), id];
+        P['custom_name_'+id] = name; P['custom_data_'+id] = csv; P['custom_start_'+id] = utc(start); P['custom_repeat_'+id] = rep;
+        save(); render(true); toast('Leseplan „' + name + '“ hinzugefügt');
+      };
+      dialog('Plan-Wiederholung', '<div>Möchtest du, dass der Plan nach dem Ende automatisch von vorne beginnt?</div>', [{label:'Nur einmalig', onClick: () => add(false)},{label:'Endlos wiederholen', filled:true, onClick: () => add(true)}]);
+    }}]);
+  setTimeout(() => ov.querySelector('#pn').select(), 50);
+});
+$('#fileBackup').addEventListener('change', async e => {
+  const file = e.target.files[0]; if(!file) return;
+  let rows; try{ rows = parseCsv(await file.text()); }catch(err){ toast('❌ CSV Import fehlgeschlagen.'); return; }
+  const run = clear => { try{ if(clear) clearReadingData(); const n = importCsv(rows); render(); toast(`✅ CSV Import erfolgreich (${n} Zeilen)`); }catch(err){ toast('❌ CSV Import fehlgeschlagen.'); } };
+  dialog('Backup importieren', `<div>${rows.length} Zeilen gefunden. Sollen deine bisherigen Daten auf diesem Gerät vorher gelöscht werden?</div>`,
+    [{label:'Abbrechen'},{label:'Zusammenführen', onClick: () => run(false)},{label:'Ersetzen', filled:true, onClick: () => run(true)}]);
+});
+
+/* ================= KALENDER-ERINNERUNG (.ics) ================= */
+function makeIcs(){
+  const v = ($('#remTime') && $('#remTime').value) || '08:00'; const [h, m] = v.split(':').map(Number);
+  P.morning_hour = h; P.morning_minute = m; save();
+  const t = today(); const now = new Date();
+  const stamp = `${now.getUTCFullYear()}${pad(now.getUTCMonth()+1)}${pad(now.getUTCDate())}T${pad(now.getUTCHours())}${pad(now.getUTCMinutes())}00Z`;
+  const ds = `${t.y}${pad(t.m)}${pad(t.d)}T${pad(h)}${pad(m)}00`;
+  const end = new Date(2000,0,1,h,m+15); const de = `${t.y}${pad(t.m)}${pad(t.d)}T${pad(end.getHours())}${pad(end.getMinutes())}00`;
+  const url = location.href.split('#')[0];
+  const ics = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Flaechenlese//Web//DE','CALSCALE:GREGORIAN','BEGIN:VEVENT',
+    `UID:flaechenlese-reminder-${Date.now()}@flaechenlese`, `DTSTAMP:${stamp}`, `DTSTART:${ds}`, `DTEND:${de}`, 'RRULE:FREQ=DAILY',
+    'SUMMARY:📖 Flächenlese – Bibel lesen', `DESCRIPTION:Zeit für deinen heutigen Leseabschnitt.\\n${url}`, `URL:${url}`,
+    'BEGIN:VALARM','ACTION:DISPLAY','TRIGGER:PT0M','DESCRIPTION:Flächenlese – Bibel lesen','END:VALARM','END:VEVENT','END:VCALENDAR'].join('\r\n');
+  saveFile('Flaechenlese-Erinnerung.ics', ics, 'text/calendar').then(ok => ok && toast('Datei öffnen, um die Erinnerung zum Kalender hinzuzufügen'));
+}
+
+/* ================= START ================= */
+load();
+// Tageswechsel: beim Zurückkehren in die App "Heute" aktualisieren
+let lastDay = iso(today());
+document.addEventListener('visibilitychange', () => { if(!document.hidden && iso(today()) !== lastDay){ lastDay = iso(today()); if(!stack.length) render(true); } });
+render();
+
+// Dauerhaften Speicher anfordern (schützt vor automatischem Löschen durch den Browser)
+(async () => { try{ if(navigator.storage && navigator.storage.persisted){ storagePersisted = await navigator.storage.persisted(); if(!storagePersisted && navigator.storage.persist) storagePersisted = await navigator.storage.persist(); } }catch(e){} })();
+// Offline-Fähigkeit
+if('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')){ try{ navigator.serviceWorker.register('sw.js').catch(() => {}); }catch(e){} }
+// Installations-Knopf (Android/Chrome)
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredInstall = e; if(!stack.length && (tab === 'home' || tab === 'settings')) render(true); });
+window.addEventListener('appinstalled', () => { deferredInstall = null; toast('✅ Flächenlese installiert'); });
+// Backup-Erinnerung: höchstens einmal pro Tag, wenn Daten vorhanden und letztes Backup > 30 Tage
+setTimeout(() => {
+  if(!hasUserData()) { if(!P.first_use){ P.first_use = Date.now(); save(); } return; }
+  if(!P.first_use){ P.first_use = Date.now(); save(); }
+  const ref = P.last_backup || P.first_use, days = (Date.now() - ref) / 864e5, td = iso(today());
+  if(days < 30 || P.backup_prompt_day === td || document.querySelector('.ovl')) return;
+  P.backup_prompt_day = td; save();
+  dialog('Backup erstellen?', `<div>${P.last_backup ? `Dein letztes Backup ist ${Math.floor(days)} Tage her.` : 'Du hast noch kein Backup erstellt.'} Deine Daten liegen nur auf diesem Gerät – mit einem Backup (z. B. in Google Drive oder iCloud Drive) gehen sie nicht verloren.</div>`,
+    [{label:'Später'},{label:'Jetzt sichern', filled:true, onClick: () => exportCsv()}]);
+}, 1500);
+</script>
+</body>
+</html>
