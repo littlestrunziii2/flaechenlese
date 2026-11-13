@@ -359,16 +359,15 @@ function refLink(ref, cls='', inner=null){
 
 /* ================= FARBEN / DESIGN ================= */
 const THEMES = {
-  grau:    {n:'Grau & Schwarz',       c:{bg:'#0f0f0f', surface:'#1f1f1f', nav:'#171717', text:'#ececec', accent:'#d4d4d4', onAccent:'#141414', read:'#3a3a3a'}},
-  creme:   {n:'Icon-Grün & Creme',    c:{bg:'#0e2a20', surface:'#1a3a2e', nav:'#0a2219', text:'#f3ede0', accent:'#e8dcc0', onAccent:'#0e2a20', read:'#2f5a47'}},
-  tanne:   {n:'Tannengrün & Elfenbein',c:{bg:'#0a1f17', surface:'#163027', nav:'#071812', text:'#f4efe4', accent:'#efe6d2', onAccent:'#0a1f17', read:'#2f5a47'}},
-  smaragd: {n:'Smaragd & Creme',      c:{bg:'#103a2b', surface:'#1d4a39', nav:'#0c3023', text:'#fbf6ea', accent:'#f1e5c8', onAccent:'#103a2b', read:'#2e6b52'}},
-  gold:    {n:'Waldgrün & Goldcreme', c:{bg:'#0e2a20', surface:'#1a3a2e', nav:'#0a2219', text:'#f3ede0', accent:'#e3c98f', onAccent:'#1b2a1c', read:'#3d5e45'}},
-  moos:    {n:'Moos & Sand',          c:{bg:'#1c2a1f', surface:'#2a3a2c', nav:'#162219', text:'#f2ecdd', accent:'#e6d8b8', onAccent:'#1c2a1f', read:'#4a5e43'}},
-  nacht:   {n:'Nacht & Gold',         c:{bg:'#14171f', surface:'#232833', nav:'#1c2029', text:'#ece6d9', accent:'#d4b06a', onAccent:'#2a2110', read:'#4a3f26'}},
-  pergament:{n:'Pergament & Waldgrün (hell)', c:{bg:'#f6f2e9', surface:'#fffdf8', nav:'#ece6d8', text:'#1d2420', accent:'#1f5c45', onAccent:'#ffffff', read:'#cfe2d6'}},
-  graphit: {n:'Graphit & Salbei',     c:{bg:'#161616', surface:'#262626', nav:'#202020', text:'#ececec', accent:'#9cc5a8', onAccent:'#16301f', read:'#2f4a37'}},
-  original:{n:'Original (Mint)',      c:{bg:'#0f1512', surface:'#252b28', nav:'#1b211e', text:'#dfe4df', accent:'#8bd5b0', onAccent:'#003825', read:'#005138'}}
+  grau:      {n:'Grau & Schwarz',      c:{bg:'#0f0f0f', surface:'#1f1f1f', nav:'#171717', text:'#ececec', accent:'#d4d4d4', onAccent:'#141414', read:'#3a3a3a'}},
+  hell:      {n:'Weiß & Grau (hell)',  c:{bg:'#f7f7f7', surface:'#ffffff', nav:'#eeeeee', text:'#1c1c1c', accent:'#2b2b2b', onAccent:'#ffffff', read:'#dedede'}},
+  ozean:     {n:'Nachtblau',           c:{bg:'#0f1724', surface:'#1b2536', nav:'#131c2b', text:'#e8edf5', accent:'#8fb4ff', onAccent:'#0f1f3d', read:'#2a3d5e'}},
+  lavendel:  {n:'Lavendel (hell)',     c:{bg:'#f5f3fa', surface:'#ffffff', nav:'#ebe7f4', text:'#221d2e', accent:'#6b5ca5', onAccent:'#ffffff', read:'#ddd6f0'}},
+  wein:      {n:'Weinrot & Rosé',      c:{bg:'#1e1214', surface:'#2d1c20', nav:'#24161a', text:'#f3e8ea', accent:'#e8a3b0', onAccent:'#3a1520', read:'#5a2a35'}},
+  terrakotta:{n:'Sand & Terrakotta (hell)', c:{bg:'#f6f0e8', surface:'#fffaf3', nav:'#ede4d8', text:'#2b211b', accent:'#b8613f', onAccent:'#ffffff', read:'#f0d6c8'}},
+  petrol:    {n:'Petrol',              c:{bg:'#0d1f22', surface:'#173033', nav:'#0a191b', text:'#e6f1f1', accent:'#6fd0c8', onAccent:'#08302d', read:'#1f4a4a'}},
+  nacht:     {n:'Nacht & Gold',        c:{bg:'#14171f', surface:'#232833', nav:'#1c2029', text:'#ece6d9', accent:'#d4b06a', onAccent:'#2a2110', read:'#4a3f26'}},
+  creme:     {n:'Icon-Grün & Creme',   c:{bg:'#0e2a20', surface:'#1a3a2e', nav:'#0a2219', text:'#f3ede0', accent:'#e8dcc0', onAccent:'#0e2a20', read:'#2f5a47'}}
 };
 const THEME_FIELDS = [['bg','Hintergrund'],['surface','Karten & Fenster'],['nav','Navigationsleiste'],['text','Text'],['accent','Akzentfarbe'],['onAccent','Text auf Akzent'],['read','„Gelesen“-Markierung']];
 const hex2rgb = h => { h = String(h).replace('#',''); if(h.length===3) h = h.split('').map(c => c+c).join(''); const n = parseInt(h,16) || 0; return [n>>16&255, n>>8&255, n&255]; };
@@ -787,7 +786,7 @@ function settingsView(){
   ${themeCard()}
   <div class="card"><h3>Alle Daten löschen</h3><div class="sub">Lesefortschritt, Notizen und eigene Pläne auf diesem Gerät entfernen.</div><div style="height:12px"></div>
     <button class="btn" style="background:var(--error);color:var(--onerror);border-radius:12px;width:100%" data-a="reset">${ic('del')} Daten zurücksetzen</button></div>
-  <div class="center small muted" style="padding:8px 0 16px">Flächenlese Web · Version 1.3</div></div>`;
+  <div class="center small muted" style="padding:8px 0 16px">Flächenlese Web · Version 1.4</div></div>`;
 }
 
 /* ================= DIALOGE ================= */
