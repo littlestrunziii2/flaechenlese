@@ -24,6 +24,8 @@ class MainActivity : Activity() {
 
     lateinit var web: WebView
     private var fileCallback: ValueCallback<Array<Uri>>? = null
+    private var pageLoaded = false
+    private var pendingImport: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -49,6 +51,11 @@ class MainActivity : Activity() {
                 openExternal(u)
                 return true
             }
+
+            override fun onPageFinished(view: WebView, url: String) {
+                pageLoaded = true
+                deliverImport()
+            }
         }
 
         web.webChromeClient = object : WebChromeClient() {
@@ -70,6 +77,31 @@ class MainActivity : Activity() {
         }
 
         if (savedInstanceState != null) web.restoreState(savedInstanceState) else web.loadUrl(START_URL)
+        readImport(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        readImport(intent)
+    }
+
+    /** Daten, die aus der Browser-Version per Link übertragen werden (flaechenlese://import?d=...). */
+    private fun readImport(i: Intent?) {
+        val u = i?.data ?: return
+        if (u.scheme != "flaechenlese" || u.host != "import") return
+        val d = u.getQueryParameter("d") ?: return
+        if (!d.matches(Regex("^[A-Za-z0-9_-]+$"))) return
+        pendingImport = d
+        i.data = null
+        deliverImport()
+    }
+
+    private fun deliverImport() {
+        val d = pendingImport ?: return
+        if (!pageLoaded) return
+        pendingImport = null
+        web.postDelayed({ web.evaluateJavascript("window.flImport && window.flImport('$d')", null) }, 600)
     }
 
     fun openExternal(u: Uri) {

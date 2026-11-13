@@ -800,7 +800,7 @@ function settingsView(){
   ${themeCard()}
   <div class="card"><h3>Alle Daten löschen</h3><div class="sub">Lesefortschritt, Notizen und eigene Pläne auf diesem Gerät entfernen.</div><div style="height:12px"></div>
     <button class="btn" style="background:var(--error);color:var(--onerror);border-radius:12px;width:100%" data-a="reset">${ic('del')} Daten zurücksetzen</button></div>
-  <div class="center small muted" style="padding:8px 0 16px">Flächenlese Web · Version 1.7</div></div>`;
+  <div class="center small muted" style="padding:8px 0 16px">Flächenlese Web · Version 1.8</div></div>`;
 }
 
 /* ================= DIALOGE ================= */
@@ -1116,6 +1116,7 @@ const ACT = {
   pdf(){ exportPdf(); },
   ics(){ makeIcs(); },
   notif(){ notifDialog(); },
+  toapp(){ transferToApp(); },
   settheme(el){ P.theme = el.dataset.id; save(); applyTheme(); render(true); },
   themenew(){ themeEditor(null); },
   themeedit(){ const t = customThemes().find(x => x.id === P.theme); if(t) themeEditor(t); },
@@ -1166,7 +1167,9 @@ function notifCard(){
   }
   if(isIOS()) return '';
   return `<div class="card"><div class="row">${ic('bell',24,'prim')}<h3>Benachrichtigungen</h3></div><div class="sub" style="margin:6px 0 12px;line-height:1.5">Erinnerungen an deine tägliche Lesung gibt es in der Android-App. Sie nutzt diese Web-App, deine Daten bleiben gleich – zusätzlich gibt es Benachrichtigungen und ein Widget.</div>
-    <a class="btn tonal" style="width:100%;border-radius:12px" href="${'https://github.com/littlestrunziii2/flaechenlese/releases/latest/download/Flaechenlese.apk'}">${ic('download')} Android-App herunterladen</a></div>`;
+    <a class="btn tonal" style="width:100%;border-radius:12px" href="${'https://github.com/littlestrunziii2/flaechenlese/releases/latest/download/Flaechenlese.apk'}">${ic('download')} Android-App herunterladen</a>
+    ${/Android/i.test(navigator.userAgent) ? `<div class="sub" style="margin:14px 0 8px;line-height:1.5">App schon installiert? Übertrage deinen Fortschritt, Notizen, Pläne und Designs aus diesem Browser in die App.</div>
+    <button class="btn" style="width:100%;border-radius:12px" data-a="toapp">${ic('fwd')} Daten in die App übertragen</button>` : ''}</div>`;
 }
 function notifDialog(){
   let on = !!(P.morning_enabled || P.evening_enabled), plans = new Set(notifPlans());
@@ -1191,6 +1194,33 @@ function notifDialog(){
   ov.querySelectorAll('[data-np]').forEach(b => b.onclick = () => { const id = b.dataset.np; if(plans.has(id)) plans.delete(id); else plans.add(id); if(!plans.size) plans.add(id); setChk(b.querySelector('.chk'), plans.has(id)); });
   ov.querySelector('#nTest').onclick = () => { try{ window.FLApp.requestNotificationPermission(); window.FLApp.testNotification(JSON.stringify([...plans])); toast('Test gesendet'); }catch(e){ toast('Nicht möglich'); } };
 }
+/* Übertragung Browser -> Android-App */
+const b64url = bytes => { let bin = ''; for(let i=0;i<bytes.length;i+=0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i+0x8000)); return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); };
+const fromB64url = str => { str = str.replace(/-/g,'+').replace(/_/g,'/'); while(str.length % 4) str += '='; const bin = atob(str); const u = new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) u[i] = bin.charCodeAt(i); return u; };
+async function packData(){
+  const data = {...P}; delete data.install_hint_dismissed; delete data.backup_prompt_day;
+  const stream = new Blob([JSON.stringify({flaechenlese:1, data})]).stream().pipeThrough(new CompressionStream('deflate'));
+  return b64url(new Uint8Array(await new Response(stream).arrayBuffer()));
+}
+async function unpackData(str){
+  const stream = new Blob([fromB64url(str)]).stream().pipeThrough(new DecompressionStream('deflate'));
+  const obj = JSON.parse(await new Response(stream).text());
+  if(!obj || obj.flaechenlese !== 1 || typeof obj.data !== 'object') throw new Error('format');
+  return obj.data;
+}
+async function transferToApp(){
+  try{
+    const d = await packData();
+    location.href = `intent://import?d=${d}#Intent;scheme=flaechenlese;package=de.flaechenlese.app;end`;
+  }catch(e){ toast('Übertragung nicht möglich – bitte Backup-Datei nutzen'); }
+}
+window.flImport = async str => {
+  let data; try{ data = await unpackData(str); }catch(e){ toast('❌ Daten konnten nicht gelesen werden'); return; }
+  const count = Object.keys(data).filter(k => /^(r|v|n)_/.test(k)).length + (data.read_days||[]).length + (data.small_read_days||[]).length;
+  dialog('Daten übernehmen?', `<div>Die Daten aus dem Browser werden in die App übernommen (${count} Einträge). Die bisherigen Daten in der App werden dabei ersetzt.</div>`,
+    [{label:'Abbrechen'},{label:'Übernehmen', filled:true, onClick: () => { P = {...data, install_hint_dismissed:true}; save(); applyTheme(); stack = []; tab = 'home'; render(); nativeSync(); toast('✅ Daten übernommen'); }}]);
+};
+
 /* Datenaustausch mit der Android-App (Widget + Benachrichtigungen) */
 let nativeTimer = null;
 function scheduleNativeSync(){ if(!NATIVE) return; clearTimeout(nativeTimer); nativeTimer = setTimeout(nativeSync, 300); }
