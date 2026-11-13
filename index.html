@@ -370,7 +370,7 @@ const THEMES = {
   petrol:    {n:'Petrol',              c:{bg:'#0d1f22', surface:'#173033', nav:'#0a191b', text:'#e6f1f1', accent:'#6fd0c8', onAccent:'#08302d', read:'#1f4a4a'}},
   nacht:     {n:'Nacht & Gold',        c:{bg:'#14171f', surface:'#232833', nav:'#1c2029', text:'#ece6d9', accent:'#d4b06a', onAccent:'#2a2110', read:'#4a3f26'}},
   creme:     {n:'Icon-Grün & Creme',   c:{bg:'#0e2a20', surface:'#1a3a2e', nav:'#0a2219', text:'#f3ede0', accent:'#e8dcc0', onAccent:'#0e2a20', read:'#2f5a47'}},
-  pfirsich:  {n:'Pink & Orange (Verlauf)', c:{bg:'#fba386', surface:'#fdbfa6', nav:'#f9788a', text:'#3a0f1b', accent:'#b3203f', onAccent:'#ffffff', read:'#f55d78'}}
+  pfirsich:  {n:'Bildfarben (Koralle & Orange)', c:{bg:'#ee5244', surface:'#f27048', nav:'#e63f65', text:'#2a0a10', accent:'#2a0a10', onAccent:'#f37d3f', read:'#ea515c'}}
 };
 const THEME_FIELDS = [['bg','Hintergrund'],['surface','Karten & Fenster'],['nav','Navigationsleiste'],['text','Text'],['accent','Akzentfarbe'],['onAccent','Text auf Akzent'],['read','„Gelesen“-Markierung']];
 const hex2rgb = h => { h = String(h).replace('#',''); if(h.length===3) h = h.split('').map(c => c+c).join(''); const n = parseInt(h,16) || 0; return [n>>16&255, n>>8&255, n&255]; };
@@ -801,7 +801,7 @@ function settingsView(){
   ${themeCard()}
   <div class="card"><h3>Alle Daten löschen</h3><div class="sub">Lesefortschritt, Notizen und eigene Pläne auf diesem Gerät entfernen.</div><div style="height:12px"></div>
     <button class="btn" style="background:var(--error);color:var(--onerror);border-radius:12px;width:100%" data-a="reset">${ic('del')} Daten zurücksetzen</button></div>
-  <div class="center small muted" style="padding:8px 0 16px">Flächenlese Web · Version 1.12</div></div>`;
+  <div class="center small muted" style="padding:8px 0 16px">Flächenlese Web · Version 1.13</div></div>`;
 }
 
 /* ================= DIALOGE ================= */
