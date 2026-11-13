@@ -47,9 +47,9 @@ nav span.l{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:1
   .navarrow.l{left:6px}.navarrow.r{right:6px}
 }
 /* Day */
-.grad{background:linear-gradient(to bottom, rgba(0,81,56,.3), var(--surface) 100%);min-height:100%}
+.grad{background:linear-gradient(to bottom, color-mix(in srgb,var(--primary) 14%,var(--bg)), var(--bg) 100%);min-height:100%}
 .daywrap{display:flex;flex-direction:column;align-items:center;gap:24px;padding:calc(32px + var(--safe-t)) 24px 24px}
-.chip{display:inline-flex;align-items:center;gap:4px;background:rgba(139,213,176,.1);color:var(--primary);border-radius:999px;padding:6px 12px 6px 16px;font-size:11px;font-weight:700;letter-spacing:.5px;margin-bottom:8px}
+.chip{display:inline-flex;align-items:center;gap:4px;background:color-mix(in srgb,var(--primary) 12%,transparent);color:var(--primary);border-radius:999px;padding:6px 12px 6px 16px;font-size:11px;font-weight:700;letter-spacing:.5px;margin-bottom:8px}
 .chip svg{width:16px;height:16px}
 .center{display:flex;flex-direction:column;align-items:center;text-align:center}
 .wd{font-size:12px;font-weight:500;color:var(--primary);letter-spacing:2px}
@@ -57,7 +57,7 @@ nav span.l{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:1
 .passage{width:100%;padding:16px 0}
 .passage .lbl{font-size:16px;font-weight:500;color:var(--onsv);margin:16px 0 12px}
 .pass{display:block;font-size:24px;font-weight:700;line-height:38px;padding:4px 16px;border-radius:12px;text-align:center;white-space:pre-line}
-.pass:active{background:rgba(255,255,255,.08)}
+.pass:active{background:color-mix(in srgb,var(--on) 8%,transparent)}
 .prim{color:var(--primary)}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--primary);color:var(--onprimary);border-radius:16px;height:48px;padding:0 24px;font-size:14px;font-weight:500;letter-spacing:.1px}
 .btn.big{width:80%;height:56px}
@@ -67,7 +67,7 @@ nav span.l{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:1
 .btn svg{width:20px;height:20px}
 .btn:disabled{opacity:.38}
 .obtn{display:inline-flex;align-items:center;justify-content:center;gap:12px;height:48px;padding:0 24px;border-radius:16px;border:1px solid var(--outline);color:var(--onsv);font-size:14px;font-weight:500}
-.obtn.has{background:rgba(0,81,56,.2);color:var(--primary)}
+.obtn.has{background:color-mix(in srgb,var(--primary) 12%,transparent);color:var(--primary)}
 .obtn.secc{color:var(--secondary)}
 .row{display:flex;align-items:center;gap:8px;width:100%}
 .flex1{flex:1;min-width:0}
@@ -84,21 +84,22 @@ nav span.l{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:1
 .calTitle{text-align:center;font-size:28px;font-weight:700;color:var(--primary);padding:16px 0}
 .cal{padding:0 16px 24px}
 .wdh{display:grid;grid-template-columns:repeat(7,1fr);padding-bottom:8px}
-.wdh div{text-align:center;font-size:11px;font-weight:700;color:rgba(139,213,176,.5)}
+.wdh div{text-align:center;font-size:11px;font-weight:700;color:color-mix(in srgb,var(--primary) 55%,transparent)}
 .grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
 .cell{aspect-ratio:1;border-radius:50%;background:var(--sv);color:var(--onsv);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:16px;position:relative}
 .cell.read{background:var(--pc);color:var(--onpc);font-weight:700}
-.cell.today{background:#fff;color:var(--icongreen);font-weight:700;box-shadow:inset 0 0 0 3px var(--icongreen)}
+.cell.today{background:var(--primary);color:var(--onprimary);font-weight:700;box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--primary)}
 .cell .nd{display:inline-block;width:6px;height:6px;border-radius:3px;background:var(--secondary);margin-left:2px;vertical-align:middle}
 .cell .rd{width:4px;height:4px;border-radius:2px;background:var(--primary)}
-.cell.today .rd{background:var(--icongreen)}
+.cell.today .rd{background:var(--onprimary)}
+.cell.today .nd{background:var(--onprimary)}
 /* Overview */
 .ov-wrap{background:var(--ovbg);min-height:100%;display:flex;flex-direction:column}
 .ovtabs{display:flex;background:var(--ovsurf);padding-top:var(--safe-t);position:sticky;top:0;z-index:2}
-.ovtabs button{flex:1;height:48px;color:#9e9e9e;font-size:14px;border-bottom:3px solid transparent}
+.ovtabs button{flex:1;height:48px;color:var(--onsv);font-size:14px;border-bottom:3px solid transparent}
 .ovtabs button.sel{color:var(--primary);font-weight:700;border-bottom-color:var(--primary)}
 .ovpage{padding:0 8px 20px;background:var(--ovbg)}
-.ovhead{display:flex;justify-content:center;align-items:center;gap:12px;padding:8px 0 4px;color:#fff}
+.ovhead{display:flex;justify-content:center;align-items:center;gap:12px;padding:8px 0 4px;color:var(--on)}
 .tbl{border:1px solid var(--ovborder);border-radius:12px;overflow:hidden;background:var(--ovsurf)}
 .tr{display:flex;border-top:.5px solid var(--ovborder)}
 .tr:first-child{border-top:0}
@@ -110,7 +111,7 @@ nav span.l{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:1
 /* Lists, cards */
 .page-pad{padding:calc(16px + var(--safe-t)) 16px 32px}
 h1{font-size:28px;font-weight:700;margin:0 0 24px}
-.card{background:rgba(64,73,68,.5);border-radius:12px;padding:16px;margin-bottom:16px}
+.card{background:var(--sc-high);border-radius:12px;padding:16px;margin-bottom:16px}
 .card h3{margin:0;font-size:16px;font-weight:700}
 .card .sub{font-size:12px;color:var(--onsv);margin-top:2px}
 .radio{display:flex;align-items:center;gap:12px;padding:8px 0;width:100%;text-align:left;font-size:16px}
@@ -150,17 +151,27 @@ h1{font-size:28px;font-weight:700;margin:0 0 24px}
 .tbtn{color:var(--primary);font-size:14px;font-weight:500;padding:10px 12px;border-radius:20px}
 .fbtn{background:var(--primary);color:var(--onprimary);font-size:14px;font-weight:500;padding:10px 24px;border-radius:20px}
 .ocard{border:1px solid var(--ov);border-radius:12px;padding:12px;text-align:left;width:100%;color:var(--on)}
-.ocard.sel{background:rgba(0,81,56,.3)}
+.ocard.sel{background:color-mix(in srgb,var(--primary) 14%,transparent);border-color:var(--primary)}
 .popt{display:flex;align-items:center;gap:12px;border:1px solid var(--ov);border-radius:12px;padding:12px;width:100%;text-align:left;color:var(--on);font-size:16px}
 .popt.sel{background:var(--pc);border-color:transparent;font-weight:700}
-.popt .hs{width:32px;height:32px;display:flex;align-items:center;justify-content:center;color:rgba(158,158,158,.3)}
+.popt .hs{width:32px;height:32px;display:flex;align-items:center;justify-content:center;color:color-mix(in srgb,var(--onsv) 35%,transparent)}
 .popt .hs.on{color:var(--primary)}
 .popt .hs svg{width:20px;height:20px}
 hr{border:0;border-top:1px solid var(--ov);margin:0;width:100%}
-#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(100px + var(--safe-b));background:#e0e4df;color:#2d322f;padding:14px 16px;border-radius:4px;font-size:14px;max-width:90%;z-index:60;box-shadow:0 3px 8px rgba(0,0,0,.4);opacity:0;pointer-events:none;transition:opacity .2s}
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(100px + var(--safe-b));background:var(--on);color:var(--bg);padding:14px 16px;border-radius:4px;font-size:14px;max-width:90%;z-index:60;box-shadow:0 3px 8px rgba(0,0,0,.4);opacity:0;pointer-events:none;transition:opacity .2s}
 #toast.on{opacity:1}
 .hint{background:var(--secc);color:var(--onsecc);border-radius:12px;padding:12px 14px;font-size:13px;line-height:1.45}
 #print{display:none}
+.themes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.thm{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 4px;border-radius:12px;border:1px solid var(--ov);font-size:12px;line-height:1.25;text-align:center;color:var(--on)}
+.thm.sel{border:2px solid var(--primary);padding:9px 3px}
+.sw{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;gap:3px;box-shadow:inset 0 0 0 1px rgba(128,128,128,.35)}
+.sw i{width:12px;height:12px;border-radius:50%;display:block}
+.crow{display:flex;align-items:center;gap:12px;padding:6px 0}
+.crow label{flex:1;font-size:15px}
+.crow input[type=color]{width:52px;height:34px;border:1px solid var(--outline);border-radius:10px;background:none;padding:2px;cursor:pointer}
+.crow input[type=color]::-webkit-color-swatch-wrapper{padding:0}
+.crow input[type=color]::-webkit-color-swatch{border:none;border-radius:7px}
 @media print{
   body{display:block;height:auto;overflow:visible;background:#fff;color:#000}
   body>*:not(#print){display:none!important}
@@ -343,6 +354,51 @@ function refLink(ref, cls='', inner=null){
   return url ? `<a class="${cls}" href="${url}" target="_blank" rel="noopener">${html}</a>` : `<span class="${cls}">${html}</span>`;
 }
 
+/* ================= FARBEN / DESIGN ================= */
+const THEMES = {
+  creme:   {n:'Icon-Grün & Creme',    c:{bg:'#0e2a20', surface:'#1a3a2e', nav:'#0a2219', text:'#f3ede0', accent:'#e8dcc0', onAccent:'#0e2a20', read:'#2f5a47'}},
+  tanne:   {n:'Tannengrün & Elfenbein',c:{bg:'#0a1f17', surface:'#163027', nav:'#071812', text:'#f4efe4', accent:'#efe6d2', onAccent:'#0a1f17', read:'#2f5a47'}},
+  smaragd: {n:'Smaragd & Creme',      c:{bg:'#103a2b', surface:'#1d4a39', nav:'#0c3023', text:'#fbf6ea', accent:'#f1e5c8', onAccent:'#103a2b', read:'#2e6b52'}},
+  gold:    {n:'Waldgrün & Goldcreme', c:{bg:'#0e2a20', surface:'#1a3a2e', nav:'#0a2219', text:'#f3ede0', accent:'#e3c98f', onAccent:'#1b2a1c', read:'#3d5e45'}},
+  moos:    {n:'Moos & Sand',          c:{bg:'#1c2a1f', surface:'#2a3a2c', nav:'#162219', text:'#f2ecdd', accent:'#e6d8b8', onAccent:'#1c2a1f', read:'#4a5e43'}},
+  nacht:   {n:'Nacht & Gold',         c:{bg:'#14171f', surface:'#232833', nav:'#1c2029', text:'#ece6d9', accent:'#d4b06a', onAccent:'#2a2110', read:'#4a3f26'}},
+  pergament:{n:'Pergament & Waldgrün (hell)', c:{bg:'#f6f2e9', surface:'#fffdf8', nav:'#ece6d8', text:'#1d2420', accent:'#1f5c45', onAccent:'#ffffff', read:'#cfe2d6'}},
+  graphit: {n:'Graphit & Salbei',     c:{bg:'#161616', surface:'#262626', nav:'#202020', text:'#ececec', accent:'#9cc5a8', onAccent:'#16301f', read:'#2f4a37'}},
+  original:{n:'Original (Mint)',      c:{bg:'#0f1512', surface:'#252b28', nav:'#1b211e', text:'#dfe4df', accent:'#8bd5b0', onAccent:'#003825', read:'#005138'}}
+};
+const THEME_FIELDS = [['bg','Hintergrund'],['surface','Karten & Fenster'],['nav','Navigationsleiste'],['text','Text'],['accent','Akzentfarbe'],['onAccent','Text auf Akzent'],['read','„Gelesen“-Markierung']];
+const hex2rgb = h => { h = String(h).replace('#',''); if(h.length===3) h = h.split('').map(c => c+c).join(''); const n = parseInt(h,16) || 0; return [n>>16&255, n>>8&255, n&255]; };
+const rgb2hex = a => '#' + a.map(x => Math.round(Math.max(0, Math.min(255, x))).toString(16).padStart(2,'0')).join('');
+const mixC = (a, b, t) => { const A = hex2rgb(a), B = hex2rgb(b); return rgb2hex(A.map((v,i) => v*(1-t) + B[i]*t)); };
+const lum = h => { const c = hex2rgb(h).map(v => { v /= 255; return v <= .03928 ? v/12.92 : Math.pow((v+.055)/1.055, 2.4); }); return .2126*c[0] + .7152*c[1] + .0722*c[2]; };
+const contrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x,y) + .05) / (Math.min(x,y) + .05); };
+const bestOn = (bg, cands) => cands.reduce((best, c) => contrast(bg, c) > contrast(bg, best) ? c : best);
+function themeColors(){ if(P.theme === 'custom' && P.theme_custom) return {...THEMES.creme.c, ...P.theme_custom}; return (THEMES[P.theme] || THEMES.creme).c; }
+function applyTheme(){
+  const t = themeColors(), light = lum(t.bg) > 0.4, st = document.documentElement.style, set = (k,v) => st.setProperty(k, v);
+  const secc = mixC(t.surface, t.accent, .22);
+  set('--bg', t.bg); set('--surface', t.bg); set('--sc-low', mixC(t.bg, t.text, .05)); set('--sc', t.nav); set('--sc-high', t.surface);
+  set('--sv', mixC(t.bg, t.text, .13)); set('--on', t.text); set('--onsv', mixC(t.text, t.bg, .3));
+  set('--primary', t.accent); set('--onprimary', t.onAccent);
+  set('--pc', t.read); set('--onpc', bestOn(t.read, [t.accent, t.text, t.onAccent]));
+  const sec = mixC(t.accent, t.text, .35); set('--secondary', sec); set('--onsecondary', bestOn(sec, [t.onAccent, t.bg, t.text]));
+  set('--secc', secc); set('--onsecc', bestOn(secc, [t.text, t.accent, t.onAccent]));
+  set('--outline', mixC(t.text, t.bg, .55)); set('--ov', mixC(t.text, t.bg, .8));
+  set('--error', light ? '#ba1a1a' : '#ffb4ab'); set('--onerror', light ? '#ffffff' : '#690005');
+  set('--ovbg', t.bg); set('--ovsurf', t.surface); set('--ovborder', mixC(t.text, t.bg, .82));
+  st.colorScheme = light ? 'light' : 'dark';
+  const m = document.querySelector('meta[name=theme-color]'); if(m) m.content = t.bg;
+}
+function themeCard(){
+  const cur = P.theme === 'custom' ? 'custom' : (THEMES[P.theme] ? P.theme : 'creme'), c = themeColors();
+  const sw = t => `<span class="sw" style="background:${t.bg}"><i style="background:${t.accent}"></i><i style="background:${t.read}"></i></span>`;
+  return `<div class="card"><div class="row">${ic('palette',24,'prim')}<h3>Farben &amp; Design</h3></div><div class="sub">Wähle eine Vorlage oder stelle jede Farbe selbst ein. Änderungen siehst du sofort.</div>
+    <div class="themes">${Object.entries(THEMES).map(([id,t]) => `<button class="thm ${cur===id?'sel':''}" data-a="settheme" data-id="${id}">${sw(t.c)}<span>${t.n}</span></button>`).join('')}${cur==='custom' ? `<button class="thm sel">${sw(c)}<span>Eigene Farben</span></button>` : ''}</div>
+    <div style="margin-top:18px;font-weight:700">Eigene Farben</div><div class="sub" style="margin-bottom:6px">Tippe auf ein Farbfeld, um es zu ändern.</div>
+    ${THEME_FIELDS.map(([k,l]) => `<div class="crow"><label for="tc_${k}">${l}</label><input type="color" id="tc_${k}" data-tk="${k}" value="${c[k]}"></div>`).join('')}
+    ${cur==='custom' ? `<div style="height:8px"></div><button class="btn tonal" style="width:100%;border-radius:12px" data-a="themereset">Zurück zur Vorlage „${esc((THEMES[P.theme_base]||THEMES.creme).n)}“</button>` : ''}</div>`;
+}
+
 /* ================= HILFSFUNKTIONEN UI ================= */
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -372,6 +428,7 @@ const ICONS = {
   upload:'M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z',
   print:'M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z',
   bell:'M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z',
+  palette:'M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8zm-5.5 9c-.83 0-1.5-.67-1.5-1.5S5.67 9 6.5 9 8 9.67 8 10.5 7.33 12 6.5 12zm3-4C8.67 8 8 7.33 8 6.5S8.67 5 9.5 5s1.5.67 1.5 1.5S10.33 8 9.5 8zm5 0c-.83 0-1.5-.67-1.5-1.5S13.67 5 14.5 5s1.5.67 1.5 1.5S15.33 8 14.5 8zm3 4c-.83 0-1.5-.67-1.5-1.5S16.67 9 17.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z',
   phone:'M17 1.01L7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14z'
 };
 const ic = (n, size=24, cls='') => `<svg class="i ${cls}" viewBox="0 0 24 24" style="width:${size}px;height:${size}px"><path d="${ICONS[n]}"/></svg>`;
@@ -570,7 +627,16 @@ const AFTER = {
   },
   overview(){ pagerStep = d => { S.ovOff[S.ovTab] += d; render(); }; attachSwipe($('#pager'), pagerStep); },
   search(){ pagerStep = null; const q = $('#q'); q.addEventListener('input', () => { S.search = q.value; $('#qclr').style.visibility = q.value ? 'visible' : 'hidden'; renderResults(); }); $('#qclr').onclick = () => { S.search=''; q.value=''; $('#qclr').style.visibility='hidden'; renderResults(); q.focus(); }; renderResults(); },
-  settings(){ pagerStep = null; },
+  settings(){
+    pagerStep = null;
+    document.querySelectorAll('[data-tk]').forEach(inp => {
+      inp.addEventListener('input', () => {
+        if(P.theme !== 'custom'){ P.theme_base = THEMES[P.theme] ? P.theme : 'creme'; P.theme_custom = {...themeColors()}; P.theme = 'custom'; }
+        P.theme_custom[inp.dataset.tk] = inp.value; applyTheme();
+      });
+      inp.addEventListener('change', () => { save(); render(true); });
+    });
+  },
   note(r){ pagerStep = null; afterNote(r); }
 };
 
@@ -582,37 +648,37 @@ function weekView(base){
   for(const a of days){
     const ps = splitPassages(effPassage(a)), r = getN('r', a), v = getN('v', a), n = getN('n', a);
     rows += `<div class="tr">
-      <div class="tc" style="flex:1.2"><div style="font-size:8px;font-weight:700;color:#9e9e9e">${WDS[dow(a)-1]}. ${pad(a.d)}.${pad(a.m)}.</div>
-        ${ps.map(p => refLink(p, '', esc(p)).replace('<a ', '<a style="font-size:11px;line-height:13px;font-weight:800;font-style:italic;color:#fff;padding:2px 4px;display:block" ').replace('<span ', '<span style="font-size:11px;font-weight:800;font-style:italic;color:#fff" ')).join('')}</div>
-      <button class="tc" style="flex:1" data-a="wkverse" data-date="${iso(a)}">${r ? refLink(r,'').replace(/^<(a|span) /, '<$1 style="font-size:9px;font-weight:700;color:var(--primary)" ') : ''}${v ? `<div class="clamp" style="-webkit-line-clamp:4;font-size:8px;line-height:10px;color:rgba(255,255,255,.8)">${esc(v)}</div>` : ''}</button>
-      <button class="tc" style="flex:1" data-a="wknote" data-date="${iso(a)}"><div class="clamp" style="-webkit-line-clamp:5;font-size:8px;line-height:10px;color:rgba(255,255,255,.6)">${esc(n)}</div></button>
+      <div class="tc" style="flex:1.2"><div style="font-size:8px;font-weight:700;color:var(--onsv)">${WDS[dow(a)-1]}. ${pad(a.d)}.${pad(a.m)}.</div>
+        ${ps.map(p => refLink(p, '', esc(p)).replace('<a ', '<a style="font-size:11px;line-height:13px;font-weight:800;font-style:italic;color:var(--on);padding:2px 4px;display:block" ').replace('<span ', '<span style="font-size:11px;font-weight:800;font-style:italic;color:var(--on)" ')).join('')}</div>
+      <button class="tc" style="flex:1" data-a="wkverse" data-date="${iso(a)}">${r ? refLink(r,'').replace(/^<(a|span) /, '<$1 style="font-size:9px;font-weight:700;color:var(--primary)" ') : ''}${v ? `<div class="clamp" style="-webkit-line-clamp:4;font-size:8px;line-height:10px;color:color-mix(in srgb,var(--on) 80%,transparent)">${esc(v)}</div>` : ''}</button>
+      <button class="tc" style="flex:1" data-a="wknote" data-date="${iso(a)}"><div class="clamp" style="-webkit-line-clamp:5;font-size:8px;line-height:10px;color:color-mix(in srgb,var(--on) 60%,transparent)">${esc(n)}</div></button>
     </div>`;
   }
   return `<div class="ovhead"><span style="font-size:16px;font-weight:900;letter-spacing:1px">KW ${isoWeek(mon)} · ${MN[sun.m-1].toUpperCase()}</span><span style="font-size:11px;color:var(--primary);letter-spacing:4px">${sun.y}</span></div>
   <div class="tbl"><div class="tr" style="background:var(--ovsurf)"><div class="th" style="flex:1.2">STELLE</div><div class="th" style="flex:1">VERS</div><div class="th" style="flex:1">NOTIZ</div></div>${rows}
   <button class="wvrow" style="width:100%" data-a="${wr ? 'wview' : 'wedit'}" data-date="${iso(sun)}"><div style="font-size:9px;font-weight:700;color:var(--primary);letter-spacing:1px">WOCHENVERS</div>
-  ${wr ? `<div style="font-size:13px;font-weight:800;color:#fff">${esc(wr)}</div>${wv ? `<div style="font-size:11px;font-style:italic;color:rgba(255,255,255,.8);line-height:14px">${esc(wv)}</div>` : ''}` : '<div style="font-size:12px;color:#9e9e9e">Kein Vers gewählt</div>'}</button></div>`;
+  ${wr ? `<div style="font-size:13px;font-weight:800;color:var(--on)">${esc(wr)}</div>${wv ? `<div style="font-size:11px;font-style:italic;color:color-mix(in srgb,var(--on) 80%,transparent);line-height:14px">${esc(wv)}</div>` : ''}` : '<div style="font-size:12px;color:var(--onsv)">Kein Vers gewählt</div>'}</button></div>`;
 }
 function sundaysOf(y, m){ const out = []; let a = {y,m,d:1}; a = addDays(a, (7 - dow(a)) % 7); while(a.m === m){ out.push(a); a = addDays(a, 7); } return out; }
 function monthView(base){
   const y = base.y, m = base.m, suns = sundaysOf(y, m), mr = getMon('mr', y, m), mv = getMon('mv', y, m);
   const rows = suns.map(s => { const r = getN('wr', s), v = getN('wv', s);
-    return `<div class="tr"><div class="tc" style="flex:.5;font-size:12px;font-weight:700;color:#9e9e9e;padding:8px">${isoWeek(s)}</div>
-    <button class="tc" style="flex:2;padding:8px" data-a="${r ? 'wview' : 'wedit'}" data-date="${iso(s)}">${r ? `<div style="font-size:13px;font-weight:700;color:#fff">${esc(r)}</div>${v ? `<div class="clamp" style="-webkit-line-clamp:2;font-size:11px;font-style:italic;color:rgba(255,255,255,.7)">${esc(v)}</div>` : ''}` : '<div style="font-size:11px;color:#555">Kein Vers gewählt</div>'}</button></div>`; }).join('');
+    return `<div class="tr"><div class="tc" style="flex:.5;font-size:12px;font-weight:700;color:var(--onsv);padding:8px">${isoWeek(s)}</div>
+    <button class="tc" style="flex:2;padding:8px" data-a="${r ? 'wview' : 'wedit'}" data-date="${iso(s)}">${r ? `<div style="font-size:13px;font-weight:700;color:var(--on)">${esc(r)}</div>${v ? `<div class="clamp" style="-webkit-line-clamp:2;font-size:11px;font-style:italic;color:color-mix(in srgb,var(--on) 70%,transparent)">${esc(v)}</div>` : ''}` : '<div style="font-size:11px;color:var(--outline)">Kein Vers gewählt</div>'}</button></div>`; }).join('');
   return `<div class="ovhead" style="padding-bottom:8px"><span style="font-size:28px;font-weight:900;letter-spacing:1px">${MN[m-1].toUpperCase()}</span><span style="font-size:14px;color:var(--primary);letter-spacing:4px;margin-left:4px">${y}</span></div>
   <div class="tbl"><div class="tr"><div class="th" style="flex:.5">KW</div><div class="th" style="flex:2">WOCHENVERS</div></div>${rows}
   <button class="wvrow" style="width:100%;padding:16px" data-a="medit" data-y="${y}" data-m="${m}"><div style="display:flex;align-items:center;gap:8px;font-size:10px;font-weight:700;color:var(--primary);letter-spacing:1px">MONATSVERS ${ic('edit',12)}</div>
-  ${mr ? `<div style="font-size:16px;font-weight:800;color:var(--primary);margin-top:4px">${esc(mr)}</div>${mv ? `<div style="font-size:12px;font-style:italic;color:rgba(255,255,255,.8);line-height:16px;margin-top:2px">${esc(mv)}</div>` : ''}` : '<div style="font-size:12px;color:#9e9e9e;margin-top:4px">Tippen zum Wählen</div>'}</button></div><div style="height:40px"></div>`;
+  ${mr ? `<div style="font-size:16px;font-weight:800;color:var(--primary);margin-top:4px">${esc(mr)}</div>${mv ? `<div style="font-size:12px;font-style:italic;color:color-mix(in srgb,var(--on) 80%,transparent);line-height:16px;margin-top:2px">${esc(mv)}</div>` : ''}` : '<div style="font-size:12px;color:var(--onsv);margin-top:4px">Tippen zum Wählen</div>'}</button></div><div style="height:40px"></div>`;
 }
 function yearView(y){
   const yr = getYear('yr', y), yv = getYear('yv', y);
   const rows = MN.map((n,i) => { const r = getMon('mr', y, i+1), v = getMon('mv', y, i+1);
-    return `<div class="tr"><div class="tc" style="flex:1;align-items:flex-start;font-size:12px;font-weight:700;color:#9e9e9e;padding:8px">${n}</div>
-    <div class="tc" style="flex:2;padding:8px">${r ? `${refLink(r,'').replace(/^<(a|span) /, '<$1 style="font-size:13px;font-weight:700;color:#fff" ')}${v ? `<div class="clamp" style="-webkit-line-clamp:1;font-size:11px;font-style:italic;color:rgba(255,255,255,.7)">${esc(v)}</div>` : ''}` : '<div style="font-size:11px;color:#555">-</div>'}</div></div>`; }).join('');
+    return `<div class="tr"><div class="tc" style="flex:1;align-items:flex-start;font-size:12px;font-weight:700;color:var(--onsv);padding:8px">${n}</div>
+    <div class="tc" style="flex:2;padding:8px">${r ? `${refLink(r,'').replace(/^<(a|span) /, '<$1 style="font-size:13px;font-weight:700;color:var(--on)" ')}${v ? `<div class="clamp" style="-webkit-line-clamp:1;font-size:11px;font-style:italic;color:color-mix(in srgb,var(--on) 70%,transparent)">${esc(v)}</div>` : ''}` : '<div style="font-size:11px;color:var(--outline)">-</div>'}</div></div>`; }).join('');
   return `<div class="ovhead" style="padding-bottom:16px;font-size:24px;font-weight:900;letter-spacing:2px"><span>JAHR</span><span style="color:var(--primary)">${y}</span></div>
   <div class="tbl"><div class="tr"><div class="th" style="flex:1">MONAT</div><div class="th" style="flex:2">MONATSVERS</div></div>${rows}
   <button class="wvrow" style="width:100%" data-a="${yr ? 'yview' : 'yedit'}" data-y="${y}"><div style="font-size:9px;font-weight:700;color:var(--primary);letter-spacing:1px">JAHRESVERS</div>
-  ${yr ? `<div style="font-size:14px;font-weight:800;color:#fff">${esc(yr)}</div>${yv ? `<div style="font-size:11px;font-style:italic;color:rgba(255,255,255,.8);line-height:14px">${esc(yv)}</div>` : ''}` : '<div style="font-size:12px;color:#9e9e9e">Tippen zum Wählen</div>'}</button></div>`;
+  ${yr ? `<div style="font-size:14px;font-weight:800;color:var(--on)">${esc(yr)}</div>${yv ? `<div style="font-size:11px;font-style:italic;color:color-mix(in srgb,var(--on) 80%,transparent);line-height:14px">${esc(yv)}</div>` : ''}` : '<div style="font-size:12px;color:var(--onsv)">Tippen zum Wählen</div>'}</button></div>`;
 }
 
 /* ----- Suche ----- */
@@ -659,16 +725,16 @@ function noteView(r){
     ${r.edit ? `<button class="ibtn" data-a="autofill">${ic('auto')}</button><button class="ibtn" data-a="nsave">${ic('check')}</button>` : `<button class="ibtn" style="color:var(--on)" data-a="nedit">${ic('edit')}</button>`}</div>`;
   let body;
   if(r.edit){
-    const fld = (id, lbl, val, ta, minh, copy) => `<div class="fld"><label>${lbl}</label>${ta ? `<textarea id="${id}" style="min-height:${minh}px;padding-right:${copy?88:48}px">${esc(val)}</textarea>` : `<textarea id="${id}" rows="1" style="padding-right:48px">${esc(val)}</textarea>`}<div class="clr">${copy ? `<button data-c="${id}" style="color:rgba(139,213,176,.6)">${ic('copy')}</button>` : ''}<button data-x="${id}" style="color:rgba(255,180,171,.6)">${ic('del')}</button></div></div>`;
+    const fld = (id, lbl, val, ta, minh, copy) => `<div class="fld"><label>${lbl}</label>${ta ? `<textarea id="${id}" style="min-height:${minh}px;padding-right:${copy?88:48}px">${esc(val)}</textarea>` : `<textarea id="${id}" rows="1" style="padding-right:48px">${esc(val)}</textarea>`}<div class="clr">${copy ? `<button data-c="${id}" style="color:color-mix(in srgb,var(--primary) 70%,transparent)">${ic('copy')}</button>` : ''}<button data-x="${id}" style="color:color-mix(in srgb,var(--error) 70%,transparent)">${ic('del')}</button></div></div>`;
     body = `${fld('fR','Bibelstelle',r.inR,false)}${fld('fV','Tagesvers',r.inV,true,56)}${fld('fN','Deine Gedanken',r.inN,true,250,true)}<button class="btn full" data-a="nsave">${ic('check')} Speichern</button>`;
   } else {
     const R = getN('r',a), V = getN('v',a), N = getN('n',a);
     body = (R ? `<div class="ncard"><div class="row" style="justify-content:space-between"><span class="k">BIBELSTELLE</span>${refLink(R, 'ibtn sm', ic('book',20))}</div><div class="selectable" style="font-size:24px;font-weight:700;white-space:pre-line">${esc(R)}</div></div>` : '') +
       (V ? `<div class="ncard"><div class="k" style="margin-bottom:8px">TAGESVERS</div><div class="selectable" style="font-size:16px;font-weight:500;line-height:24px;white-space:pre-line">${esc(V)}</div></div>` : '') +
       (N ? `<div class="ncard"><div class="k" style="margin-bottom:8px">DEINE GEDANKEN</div><div class="selectable" style="font-size:16px;line-height:24px;white-space:pre-line">${esc(N)}</div></div>` : '') +
-      (!R && !V && !N ? '<div class="center" style="padding:80px 0;color:#9e9e9e">Noch keine Notizen vorhanden.</div>' : '');
+      (!R && !V && !N ? '<div class="center" style="padding:80px 0;color:var(--onsv)">Noch keine Notizen vorhanden.</div>' : '');
   }
-  return `<div style="min-height:100%;background:linear-gradient(to bottom, rgba(0,81,56,.1), var(--surface))">${top}<div style="padding:8px 20px 32px;display:flex;flex-direction:column;gap:20px">${body}</div></div>`;
+  return `<div style="min-height:100%;background:linear-gradient(to bottom, color-mix(in srgb,var(--primary) 7%,var(--bg)), var(--bg))">${top}<div style="padding:8px 20px 32px;display:flex;flex-direction:column;gap:20px">${body}</div></div>`;
 }
 function afterNote(r){
   if(!r.edit) return;
@@ -694,13 +760,14 @@ function settingsView(){
   const radio = (on, label, act, extra='') => `<button class="radio" data-a="${act}"><span class="rdot ${on?'on':''}"></span><span style="flex:1">${label}</span>${extra}</button>`;
   const custom = customIds().map(id => `<div class="row">${radio(t==='CUSTOM_'+id, esc(customName(id)), 'setplan" data-p="CUSTOM_'+esc(id))}<button class="ibtn sm" data-a="plancfg" data-id="${esc(id)}">${ic('settings',18)}</button><button class="ibtn sm" style="color:var(--error)" data-a="plandel" data-id="${esc(id)}">${ic('del',18)}</button></div>`).join('');
   return `<div class="page-pad"><h1>Einstellungen</h1>
+  ${themeCard()}
   <div class="card"><h3>Leseplan auswählen</h3><div style="height:8px"></div>
     ${radio(t==='LARGE','Große Flächenlese','setplan" data-p="LARGE')}${radio(t==='SMALL','Kleine Flächenlese','setplan" data-p="SMALL')}${custom}
     <div style="height:16px"></div><button class="btn tonal" style="width:100%;border-radius:12px" data-a="newplan">${ic('add')} Neuen Leseplan erstellen (.csv)</button></div>
   <div class="card"><h3>Bibel-Übersetzung</h3><div class="sub">Standard-Übersetzung für YouVersion / bible.com</div><div style="height:12px"></div>
     ${TRANSLATIONS.map(([id,n]) => radio(tid===id, esc(n), 'settr" data-id="'+id+'" data-n="'+esc(n))).join('')}</div>
   <div class="card"><div class="row">${ic('bell',24,'prim')}<h3>Tägliche Erinnerung</h3></div><div class="sub">Trägt einen täglichen Termin mit Erinnerung in deinen Handy-Kalender ein. Deine Daten bleiben trotzdem nur in der App.</div><div style="height:12px"></div>
-    <div class="row"><span style="flex:1">Uhrzeit</span><input type="time" id="remTime" value="${pad(P.morning_hour ?? 8)}:${pad(P.morning_minute ?? 0)}" class="inp" style="width:150px;padding:10px 12px;border-radius:12px;color-scheme:dark"></div>
+    <div class="row"><span style="flex:1">Uhrzeit</span><input type="time" id="remTime" value="${pad(P.morning_hour ?? 8)}:${pad(P.morning_minute ?? 0)}" class="inp" style="width:150px;padding:10px 12px;border-radius:12px"></div>
     <div style="height:12px"></div><button class="btn tonal" style="width:100%;border-radius:12px" data-a="ics">${ic('cal')} Zum Kalender hinzufügen</button>
     <div class="small muted" style="margin-top:8px;line-height:1.5">iPhone: „Hinzufügen“ bestätigen. Android: die Datei mit deiner Kalender-App öffnen. Zum Ändern der Uhrzeit den alten Termin im Kalender löschen und neu hinzufügen.</div></div>
   <div class="card"><h3>Daten &amp; Backup</h3><div class="sub">Deine Daten liegen nur auf diesem Gerät. Sichere sie regelmäßig, z. B. in Google Drive oder iCloud Drive. Gleiches CSV-Format wie die Android-App („CSV Export“) – so kannst du Daten zwischen beiden übertragen.</div><div style="height:12px"></div>
@@ -714,8 +781,8 @@ function settingsView(){
     ${isStandalone() ? '<div class="small" style="color:var(--primary)">✓ Flächenlese läuft als installierte App.</div>' : `${deferredInstall ? `<button class="btn" style="width:100%;border-radius:12px;margin-bottom:10px" data-a="install">${ic('download')} Jetzt installieren</button>` : ''}<div class="small muted" style="line-height:1.6"><b>Android (Chrome):</b> Menü ⋮ → „App installieren“ bzw. „Zum Startbildschirm hinzufügen“.<br><b>iPhone (Safari):</b> Teilen-Symbol → „Zum Home-Bildschirm“.<br>${isIOS() ? '<b style="color:var(--error)">Wichtig am iPhone:</b> Safari und die Home-Bildschirm-App haben getrennte Speicher. Nutze nur noch die App vom Home-Bildschirm.' : 'Danach startet Flächenlese wie eine normale App, auch offline.'}</div>`}
     <div class="small muted" style="margin-top:10px">Dauerhafter Speicher: ${storagePersisted === true ? '<span style="color:var(--primary)">aktiv ✓</span>' : storagePersisted === false ? 'nicht bestätigt (nach der Installation meist aktiv)' : 'unbekannt'}</div></div>
   <div class="card"><h3>Alle Daten löschen</h3><div class="sub">Lesefortschritt, Notizen und eigene Pläne auf diesem Gerät entfernen.</div><div style="height:12px"></div>
-    <button class="btn" style="background:var(--error);color:#690005;border-radius:12px;width:100%" data-a="reset">${ic('del')} Daten zurücksetzen</button></div>
-  <div class="center small muted" style="padding:8px 0 16px">Flächenlese Web · Version 1.0</div></div>`;
+    <button class="btn" style="background:var(--error);color:var(--onerror);border-radius:12px;width:100%" data-a="reset">${ic('del')} Daten zurücksetzen</button></div>
+  <div class="center small muted" style="padding:8px 0 16px">Flächenlese Web · Version 1.1</div></div>`;
 }
 
 /* ================= DIALOGE ================= */
@@ -723,7 +790,7 @@ function planSwitcher(){
   const t = planType(); const hs = P.hotswap_plans || [];
   const opt = (id, name) => `<div class="popt ${t===id?'sel':''}" data-pid="${esc(id)}"><span class="rdot ${t===id?'on':''}"></span><span style="flex:1">${esc(name)}</span><button class="hs ${hs.includes(id)?'on':''}" data-hs="${esc(id)}">${ic('sync')}</button></div>`;
   const cust = customIds();
-  const ov = dialog('<b>Leseplan wechseln</b>', `<div class="small" style="color:#9e9e9e">Doppeltipp auf Name hotswappt zwischen markierten (${ic('sync',14)}) Plänen.</div>${opt('LARGE','Große Flächenlese')}${opt('SMALL','Kleine Flächenlese')}${cust.length ? `<hr><div style="font-size:12px;color:var(--primary)">Eigene Pläne</div>${cust.map(id => opt('CUSTOM_'+id, customName(id))).join('')}` : ''}`, [{label:'Schließen'}]);
+  const ov = dialog('<b>Leseplan wechseln</b>', `<div class="small" style="color:var(--onsv)">Doppeltipp auf Name hotswappt zwischen markierten (${ic('sync',14)}) Plänen.</div>${opt('LARGE','Große Flächenlese')}${opt('SMALL','Kleine Flächenlese')}${cust.length ? `<hr><div style="font-size:12px;color:var(--primary)">Eigene Pläne</div>${cust.map(id => opt('CUSTOM_'+id, customName(id))).join('')}` : ''}`, [{label:'Schließen'}]);
   ov.querySelector('.body').style.gap = '8px';
   ov.addEventListener('click', e => {
     const hsb = e.target.closest('[data-hs]');
@@ -1028,6 +1095,8 @@ const ACT = {
   csvimport(){ const f = $('#fileBackup'); f.value = ''; f.click(); },
   pdf(){ exportPdf(); },
   ics(){ makeIcs(); },
+  settheme(el){ P.theme = el.dataset.id; save(); applyTheme(); render(true); },
+  themereset(){ P.theme = P.theme_base || 'creme'; save(); applyTheme(); render(true); },
   install(){ if(deferredInstall){ deferredInstall.prompt(); deferredInstall.userChoice.finally(() => { deferredInstall = null; render(true); }); } },
   dismissInstall(){ P.install_hint_dismissed = true; save(); render(true); },
   reset(){ confirmDialog('Alle Daten löschen?', 'Lesefortschritt, Notizen, Verse und eigene Pläne auf diesem Gerät werden gelöscht. Das kann nicht rückgängig gemacht werden.', 'Löschen', () => { P = {}; save(); S.homeOff = 0; render(); toast('Alle Daten gelöscht'); }); }
@@ -1043,7 +1112,7 @@ $('#fileCsvPlan').addEventListener('change', async e => {
   const file = e.target.files[0]; if(!file) return;
   const csv = await file.text();
   const t = today();
-  const ov = dialog('Plan benennen', `<div class="fld"><label style="background:var(--sc-high)">Name des Leseplans</label><input id="pn" value="Mein Leseplan"></div><div class="fld"><label style="background:var(--sc-high)">Startdatum</label><input id="pd" type="date" value="${iso(t)}" style="color-scheme:dark"></div>`,
+  const ov = dialog('Plan benennen', `<div class="fld"><label style="background:var(--sc-high)">Name des Leseplans</label><input id="pn" value="Mein Leseplan"></div><div class="fld"><label style="background:var(--sc-high)">Startdatum</label><input id="pd" type="date" value="${iso(t)}" style="x"></div>`,
     [{label:'Abbrechen'},{label:'Weiter', filled:true, onClick: o => {
       const name = o.querySelector('#pn').value.trim() || 'Mein Leseplan'; const dv = o.querySelector('#pd').value; const start = dv ? parseIso(dv) : t;
       const add = rep => {
@@ -1082,6 +1151,7 @@ function makeIcs(){
 
 /* ================= START ================= */
 load();
+applyTheme();
 // Tageswechsel: beim Zurückkehren in die App "Heute" aktualisieren
 let lastDay = iso(today());
 document.addEventListener('visibilitychange', () => { if(!document.hidden && iso(today()) !== lastDay){ lastDay = iso(today()); if(!stack.length) render(true); } });
