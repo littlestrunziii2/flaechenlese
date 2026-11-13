@@ -144,6 +144,7 @@ class MainActivity : Activity() {
     override fun onResume() {
         super.onResume()
         if (::web.isInitialized) web.evaluateJavascript("window.flNativeResume && window.flNativeResume()", null)
+        Updates.check(this) { name -> Updates.showDialog(this, name) }
     }
 
     override fun onPause() {
