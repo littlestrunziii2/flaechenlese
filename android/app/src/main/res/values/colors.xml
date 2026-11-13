@@ -1,4 +1,9 @@
 <resources>
     <color name="bg">#0F0F0F</color>
     <color name="icon_bg">#023021</color>
+    <color name="icon_green">#003D29</color>
+    <color name="widget_bg_color">#2C2C2E</color>
+    <color name="widget_button_bg_color">#3A3A3C</color>
+    <color name="widget_button_stroke_color">#58585A</color>
+    <color name="widget_checked_bg_color">#003D29</color>
 </resources>

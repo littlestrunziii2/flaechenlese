@@ -17,6 +17,7 @@ import android.webkit.WebViewClient
 class MainActivity : Activity() {
 
     companion object {
+        const val EXTRA_OPEN_DATE = "open_date"
         const val START_URL = "https://littlestrunziii2.github.io/flaechenlese/"
         private const val HOST = "littlestrunziii2.github.io"
         private const val REQ_FILE = 7
@@ -26,6 +27,7 @@ class MainActivity : Activity() {
     private var fileCallback: ValueCallback<Array<Uri>>? = null
     private var pageLoaded = false
     private var pendingImport: String? = null
+    private var pendingOpenDate: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -88,6 +90,9 @@ class MainActivity : Activity() {
 
     /** Daten, die aus der Browser-Version per Link übertragen werden (flaechenlese://import?d=...). */
     private fun readImport(i: Intent?) {
+        i?.getStringExtra(EXTRA_OPEN_DATE)?.let { d ->
+            if (d.matches(Regex("^\\d{4}-\\d{2}-\\d{2}$"))) { pendingOpenDate = d; i?.removeExtra(EXTRA_OPEN_DATE); deliverImport() }
+        }
         val u = i?.data ?: return
         if (u.scheme != "flaechenlese" || u.host != "import") return
         val d = u.getQueryParameter("d") ?: return
@@ -98,8 +103,12 @@ class MainActivity : Activity() {
     }
 
     private fun deliverImport() {
-        val d = pendingImport ?: return
         if (!pageLoaded) return
+        pendingOpenDate?.let { day ->
+            pendingOpenDate = null
+            web.postDelayed({ web.evaluateJavascript("window.flOpenDay && window.flOpenDay('$day')", null) }, 400)
+        }
+        val d = pendingImport ?: return
         pendingImport = null
         web.postDelayed({ web.evaluateJavascript("window.flImport && window.flImport('$d')", null) }, 600)
     }
@@ -139,7 +148,7 @@ class MainActivity : Activity() {
 
     override fun onPause() {
         super.onPause()
-        TodayWidget.updateAll(this)
+        Widgets.updateAll(this)
     }
 
     fun printPage() {

@@ -1,52 +1,63 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/root"
+    android:id="@+id/widget_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/widget_bg"
-    android:gravity="center"
-    android:orientation="vertical"
-    android:padding="14dp">
+    android:background="@drawable/widget_background"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:baselineAligned="false"
+    android:padding="12dp">
 
-    <TextView
-        android:id="@+id/plan"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:letterSpacing="0.08"
-        android:textColor="#FF9A9A9A"
-        android:textSize="10sp"
-        android:textStyle="bold" />
+        android:layout_weight="1"
+        android:orientation="vertical">
 
-    <TextView
-        android:id="@+id/date"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
-        android:textColor="#FFCFCFCF"
-        android:textSize="12sp" />
+        <TextView
+            android:id="@+id/widget_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="HEUTE"
+            android:textColor="#FFFFFF"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:alpha="0.5"
+            android:letterSpacing="0.25" />
 
-    <TextView
-        android:id="@+id/passage"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
-        android:gravity="center"
-        android:maxLines="3"
-        android:textColor="#FFFFFFFF"
-        android:textSize="18sp"
-        android:textStyle="bold" />
+        <TextView
+            android:id="@+id/widget_passage"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="2"
+            android:text="Lade..."
+            android:textColor="#FFFFFF"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:layout_marginTop="1dp" />
+    </LinearLayout>
 
-    <TextView
-        android:id="@+id/btn"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:background="@drawable/widget_btn"
-        android:paddingStart="16dp"
-        android:paddingTop="7dp"
-        android:paddingEnd="16dp"
-        android:paddingBottom="7dp"
-        android:text="Als gelesen markieren"
-        android:textColor="#FF141414"
-        android:textSize="13sp" />
+    <ImageView
+        android:id="@+id/widget_button_bible"
+        android:layout_width="34dp"
+        android:layout_height="34dp"
+        android:layout_marginStart="8dp"
+        android:background="@drawable/widget_button_background"
+        android:contentDescription="YouVersion"
+        android:padding="6dp"
+        android:src="@drawable/ic_bible_custom"
+        android:scaleType="fitCenter" />
+
+    <ImageView
+        android:id="@+id/widget_button_check"
+        android:layout_width="34dp"
+        android:layout_height="34dp"
+        android:layout_marginStart="8dp"
+        android:background="@drawable/widget_button_background"
+        android:contentDescription="Erledigt"
+        android:padding="6dp"
+        android:scaleType="fitCenter" />
+
 </LinearLayout>

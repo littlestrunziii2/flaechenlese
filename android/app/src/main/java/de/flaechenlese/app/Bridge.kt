@@ -25,7 +25,7 @@ class Bridge(private val a: MainActivity) {
     fun sync(json: String) {
         Store.saveSnapshot(c, json)
         Reminders.schedule(c)
-        TodayWidget.updateAll(c)
+        Widgets.updateAll(c)
     }
 
     @JavascriptInterface

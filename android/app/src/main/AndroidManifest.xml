@@ -42,11 +42,27 @@
             </intent-filter>
         </receiver>
 
-        <receiver android:name=".TodayWidget" android:exported="true" android:label="@string/widget_today">
+        <receiver android:name=".ReadingWidget" android:exported="false" android:label="@string/widget_today_label">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_today_info" />
         </receiver>
+
+        <receiver android:name=".ProgressWidget" android:exported="false" android:label="@string/widget_progress_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_progress_info" />
+        </receiver>
+
+        <receiver android:name=".CalendarWidget" android:exported="false" android:label="@string/widget_calendar_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_calendar_info" />
+        </receiver>
+
+        <service android:name=".CalendarWidgetService" android:permission="android.permission.BIND_REMOTEVIEWS" android:exported="false" />
     </application>
 </manifest>

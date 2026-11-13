@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Material You Dynamic Colors (Android 12+) -->
+    <!-- Secondary Color for Widget Background -->
+    <color name="widget_bg_color">@android:color/system_accent2_900</color>
+    <!-- Primary Color for Read days & Checkmark box -->
+    <color name="widget_checked_bg_color">@android:color/system_accent1_600</color>
+    <!-- Another Accent Color for Unread items -->
+    <color name="widget_button_bg_color">@android:color/system_accent3_700</color>
+    <color name="widget_button_stroke_color">@android:color/system_accent1_700</color>
+</resources>

@@ -23,15 +23,24 @@ object Store {
         return try { JSONObject(raw) } catch (e: Exception) { null }
     }
 
-    data class Day(val passage: String?, val read: Boolean)
+    data class Day(val passage: String?, val read: Boolean, val url: String?)
 
     private fun dayJson(s: JSONObject?, plan: String, date: String): JSONObject? =
         s?.optJSONObject("plans")?.optJSONObject(plan)?.optJSONObject("days")?.optJSONObject(date)
 
     fun day(c: Context, plan: String, date: String = today()): Day {
-        val d = dayJson(snapshot(c), plan, date) ?: return Day(null, false)
+        val d = dayJson(snapshot(c), plan, date) ?: return Day(null, reads(c, plan).contains(date), null)
         val p = d.optString("p", "")
-        return Day(if (p.isBlank()) null else p, d.optBoolean("r", false))
+        val u = d.optString("u", "")
+        return Day(if (p.isBlank()) null else p, d.optBoolean("r", false), if (u.isBlank()) null else u)
+    }
+
+    fun activePlan(c: Context): String = snapshot(c)?.optString("active", "LARGE") ?: "LARGE"
+
+    /** Alle als gelesen markierten Tage (yyyy-MM-dd) eines Plans. */
+    fun reads(c: Context, plan: String): Set<String> {
+        val a = snapshot(c)?.optJSONObject("plans")?.optJSONObject(plan)?.optJSONArray("reads") ?: return emptySet()
+        return (0 until a.length()).map { a.getString(it) }.toSet()
     }
 
     fun hasPlan(c: Context, plan: String): Boolean =
@@ -53,6 +62,13 @@ object Store {
         val d = dayJson(s, plan, date) ?: return false
         val newRead = !d.optBoolean("r", false)
         d.put("r", newRead)
+        val planObj = s.optJSONObject("plans")?.optJSONObject(plan)
+        if (planObj != null) {
+            val old = planObj.optJSONArray("reads") ?: JSONArray()
+            val set = (0 until old.length()).map { old.getString(it) }.toMutableSet()
+            if (newRead) set.add(date) else set.remove(date)
+            planObj.put("reads", JSONArray(set.toList()))
+        }
         saveSnapshot(c, s.toString())
         val arr = try { JSONArray(prefs(c).getString("pending", "[]")) } catch (e: Exception) { JSONArray() }
         arr.put(JSONObject().put("plan", plan).put("date", date).put("read", newRead))

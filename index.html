@@ -800,7 +800,7 @@ function settingsView(){
   ${themeCard()}
   <div class="card"><h3>Alle Daten löschen</h3><div class="sub">Lesefortschritt, Notizen und eigene Pläne auf diesem Gerät entfernen.</div><div style="height:12px"></div>
     <button class="btn" style="background:var(--error);color:var(--onerror);border-radius:12px;width:100%" data-a="reset">${ic('del')} Daten zurücksetzen</button></div>
-  <div class="center small muted" style="padding:8px 0 16px">Flächenlese Web · Version 1.8</div></div>`;
+  <div class="center small muted" style="padding:8px 0 16px">Flächenlese Web · Version 1.9</div></div>`;
 }
 
 /* ================= DIALOGE ================= */
@@ -1230,8 +1230,9 @@ function nativeSync(){
     const t0 = today(), plans = {};
     for(const id of allPlanIds()){
       const days = {};
-      for(let i=-2; i<=60; i++){ const a = addDays(t0, i); let p = planPassage(a, id); if(['Plan beendet','Kein Eintrag','Kein Plan geladen'].includes(p)){ const r = getN('r', a, id); if(r.trim()) p = r; } days[iso(a)] = {p: splitPassages(p).join('\n'), r: isRead(a, id)}; }
-      plans[id] = {name: planLabel(id), days};
+      for(let i=-2; i<=60; i++){ const a = addDays(t0, i); let p = planPassage(a, id); if(['Plan beendet','Kein Eintrag','Kein Plan geladen'].includes(p)){ const r = getN('r', a, id); if(r.trim()) p = r; } const parts = splitPassages(p); days[iso(a)] = {p: parts.join('\n'), r: isRead(a, id), u: (parts.length ? bibleUrl(parts[0]) : null) || ''}; }
+      const reads = [...getSet(readKey(id))].map(x => x.length === 5 ? '2026-' + x : x).filter(x => /^\d{4}-\d{2}-\d{2}$/.test(x));
+      plans[id] = {name: planLabel(id), days, reads};
     }
     window.FLApp.sync(JSON.stringify({v:1, active: planType(), activeName: planName(planType()), notif:{enabled: !!(P.morning_enabled || P.evening_enabled), mh: P.morning_hour ?? 8, mm: P.morning_minute ?? 0, eh: P.evening_hour ?? 20, em: P.evening_minute ?? 0, plans: notifPlans()}, plans}));
   }catch(e){}
@@ -1245,6 +1246,7 @@ function applyNativeToggles(){
   }catch(e){}
   return false;
 }
+window.flOpenDay = d => { try{ document.querySelectorAll('.ovl').forEach(o => o.remove()); tab = 'calendar'; stack = []; push({name:'day', date: clampDate(parseIso(d)), off:0}); }catch(e){} };
 window.flNativeResume = () => { const changed = applyNativeToggles(); if(changed || iso(today()) !== lastDay){ lastDay = iso(today()); render(true); } nativeSync(); };
 
 /* ================= KALENDER-ERINNERUNG (.ics) ================= */
