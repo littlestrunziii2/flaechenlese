@@ -20,15 +20,39 @@ import java.util.Locale
 /** Farben des aktuellen App-Designs (kommen aus der Web-App). Ohne Daten bleiben die Original-Farben. */
 data class WColors(val bg: Int, val text: Int, val muted: Int, val btn: Int, val read: Int, val onRead: Int, val accent: Int, val onAccent: Int) {
     companion object {
+        private fun lum(c: Int): Double {
+            fun ch(v: Int): Double { val x = v / 255.0; return if (x <= 0.03928) x / 12.92 else Math.pow((x + 0.055) / 1.055, 2.4) }
+            return 0.2126 * ch(Color.red(c)) + 0.7152 * ch(Color.green(c)) + 0.0722 * ch(Color.blue(c))
+        }
+        fun ratio(a: Int, b: Int): Double { val x = lum(a); val y = lum(b); return (maxOf(x, y) + 0.05) / (minOf(x, y) + 0.05) }
+        private fun mix(a: Int, b: Int, t: Float) = Color.rgb(
+            (Color.red(a) + (Color.red(b) - Color.red(a)) * t).toInt(),
+            (Color.green(a) + (Color.green(b) - Color.green(a)) * t).toInt(),
+            (Color.blue(a) + (Color.blue(b) - Color.blue(a)) * t).toInt())
+        /** Schiebt eine Farbe in Richtung Hell/Dunkel, bis sie sich von allen Referenzen genug abhebt. */
+        private fun separate(c: Int, refs: List<Int>, min: Double, bgLight: Boolean): Int {
+            var x = c
+            val target = if (bgLight) Color.BLACK else Color.WHITE
+            var t = 0f
+            while (t <= 1f && refs.any { ratio(x, it) < min }) { t += 0.05f; x = mix(c, target, t) }
+            return x
+        }
+        private fun on(c: Int) = if (ratio(c, Color.WHITE) >= ratio(c, Color.BLACK)) Color.WHITE else Color.BLACK
+
         fun load(c: Context): WColors? {
             val j = Store.snapshot(c)?.optJSONObject("colors") ?: return null
             return try {
-                WColors(
-                    Color.parseColor(j.getString("bg")), Color.parseColor(j.getString("text")),
-                    Color.parseColor(j.getString("muted")), Color.parseColor(j.getString("btn")),
-                    Color.parseColor(j.getString("read")), Color.parseColor(j.getString("onRead")),
-                    Color.parseColor(j.getString("accent")), Color.parseColor(j.getString("onAccent"))
-                )
+                val bg = Color.parseColor(j.getString("bg"))
+                val text = Color.parseColor(j.getString("text"))
+                val bgLight = lum(bg) > 0.4
+                // Ungelesen: dezent, aber klar vom Hintergrund abgesetzt
+                val unread = mix(bg, text, 0.16f)
+                // Gelesen: kräftige Farbe, deutlich anders als ungelesen UND Hintergrund
+                val read = separate(Color.parseColor(j.getString("read")), listOf(unread, bg), 2.4, bgLight)
+                // Heute: muss sich von gelesen, ungelesen und Hintergrund abheben
+                val accent = separate(Color.parseColor(j.getString("accent")), listOf(unread, bg, read), 1.6, bgLight)
+                val muted = if (ratio(Color.parseColor(j.getString("muted")), bg) >= 3.0) Color.parseColor(j.getString("muted")) else mix(bg, text, 0.7f)
+                WColors(bg, text, muted, unread, read, on(read), accent, on(accent))
             } catch (e: Exception) { null }
         }
     }
@@ -184,8 +208,7 @@ class CalendarWidget : AppWidgetProvider() {
                 WColors.load(c)?.let { col ->
                     views.tintBg(R.id.widget_calendar_root, col.bg)
                     views.setTextColor(R.id.calendar_widget_title, col.text)
-                    val muted = Color.argb(128, Color.red(col.text), Color.green(col.text), Color.blue(col.text))
-                    listOf(R.id.wd1, R.id.wd2, R.id.wd3, R.id.wd4, R.id.wd5, R.id.wd6, R.id.wd7).forEach { views.setTextColor(it, muted) }
+                    listOf(R.id.wd1, R.id.wd2, R.id.wd3, R.id.wd4, R.id.wd5, R.id.wd6, R.id.wd7).forEach { views.setTextColor(it, col.muted) }
                 }
                 m.updateAppWidget(id, views)
             }
