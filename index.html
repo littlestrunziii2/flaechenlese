@@ -169,6 +169,7 @@ hr{border:0;border-top:1px solid var(--ov);margin:0;width:100%}
 .swrow{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
 .dot{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:inset 0 0 0 1px rgba(128,128,128,.35)}
 .dot i{width:12px;height:12px;border-radius:50%;display:block}
+.dot.add{background:none;color:var(--onsv);box-shadow:none;border:1.5px dashed var(--outline)}
 .dot.sel{box-shadow:0 0 0 2px var(--sc-high),0 0 0 4px var(--primary)}
 .crow{display:flex;align-items:center;gap:12px;padding:7px 0;color:var(--on)}
 .crow label{flex:1;font-size:15px}
@@ -376,9 +377,16 @@ const mixC = (a, b, t) => { const A = hex2rgb(a), B = hex2rgb(b); return rgb2hex
 const lum = h => { const c = hex2rgb(h).map(v => { v /= 255; return v <= .03928 ? v/12.92 : Math.pow((v+.055)/1.055, 2.4); }); return .2126*c[0] + .7152*c[1] + .0722*c[2]; };
 const contrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x,y) + .05) / (Math.min(x,y) + .05); };
 const bestOn = (bg, cands) => cands.reduce((best, c) => contrast(bg, c) > contrast(bg, best) ? c : best);
-function themeColors(){ if(P.theme === 'custom' && P.theme_custom) return {...THEMES.grau.c, ...P.theme_custom}; return (THEMES[P.theme] || THEMES.grau).c; }
-function applyTheme(){
-  const t = themeColors(), light = lum(t.bg) > 0.4, st = document.documentElement.style, set = (k,v) => st.setProperty(k, v);
+const customThemes = () => P.custom_themes || [];
+function themeById(id){ if(THEMES[id]) return THEMES[id]; return customThemes().find(t => t.id === id) || null; }
+function themeColors(){ const t = themeById(P.theme); return t ? {...THEMES.grau.c, ...t.c} : THEMES.grau.c; }
+function migrateTheme(){
+  if(P.theme === 'custom' && P.theme_custom){ const id = 'u_' + Date.now().toString(36); P.custom_themes = [...customThemes(), {id, n:'Eigenes Design', c:{...THEMES.grau.c, ...P.theme_custom}}]; P.theme = id; }
+  delete P.theme_custom; delete P.theme_base; save();
+}
+function applyTheme(){ applyThemeColors(themeColors()); }
+function applyThemeColors(t){
+  const light = lum(t.bg) > 0.4, st = document.documentElement.style, set = (k,v) => st.setProperty(k, v);
   const secc = mixC(t.surface, t.accent, .22);
   set('--bg', t.bg); set('--surface', t.bg); set('--sc-low', mixC(t.bg, t.text, .05)); set('--sc', t.nav); set('--sc-high', t.surface);
   set('--sv', mixC(t.bg, t.text, .13)); set('--on', t.text); set('--onsv', mixC(t.text, t.bg, .3));
@@ -393,22 +401,27 @@ function applyTheme(){
   const m = document.querySelector('meta[name=theme-color]'); if(m) m.content = t.bg;
 }
 function themeCard(){
-  const cur = P.theme === 'custom' ? 'custom' : (THEMES[P.theme] ? P.theme : 'grau');
-  const name = cur === 'custom' ? 'Eigene Farben' : THEMES[cur].n;
-  return `<div class="card"><h3>Design</h3><div class="sub">${esc(name)}</div>
-    <div class="swrow">${Object.entries(THEMES).map(([id,t]) => `<button class="dot ${cur===id?'sel':''}" data-a="settheme" data-id="${id}" aria-label="${esc(t.n)}" style="background:${t.c.bg}"><i style="background:${t.c.accent}"></i></button>`).join('')}</div>
-    <button class="tbtn" style="padding:8px 0 0" data-a="themecustom">Farben selbst anpassen</button></div>`;
+  const cur = themeById(P.theme) ? (P.theme || 'grau') : 'grau', isCustom = cur.startsWith('u_');
+  const dot = (id, t) => `<button class="dot ${cur===id?'sel':''}" data-a="settheme" data-id="${esc(id)}" aria-label="${esc(t.n)}" style="background:${t.c.bg}"><i style="background:${t.c.accent}"></i></button>`;
+  return `<div class="card"><h3>Design</h3><div class="sub">${esc(themeById(cur).n)}</div>
+    <div class="swrow">${Object.entries(THEMES).map(([id,t]) => dot(id, t)).join('')}${customThemes().map(t => dot(t.id, t)).join('')}<button class="dot add" data-a="themenew" aria-label="Neues Design">${ic('add',20)}</button></div>
+    ${isCustom ? `<div class="row" style="gap:16px;margin-top:4px"><button class="tbtn" style="padding:8px 0 0" data-a="themeedit">Bearbeiten</button><button class="tbtn" style="padding:8px 0 0;color:var(--error)" data-a="themedel">Löschen</button></div>` : ''}</div>`;
 }
-function themeDialog(){
-  const c = themeColors();
-  const ov = dialog('Farben anpassen', THEME_FIELDS.map(([k,l]) => `<div class="crow"><label for="tc_${k}">${l}</label><input type="color" id="tc_${k}" data-tk="${k}" value="${c[k]}"></div>`).join(''),
-    [{label:'Zurücksetzen', onClick: () => { P.theme = P.theme_base || (P.theme !== 'custom' ? P.theme : 'grau'); save(); applyTheme(); render(true); }}, {label:'Fertig', filled:true}],
-    {onClose: () => { save(); render(true); }});
+function themeEditor(existing){
+  const c = {...(existing ? {...THEMES.grau.c, ...existing.c} : themeColors())};
+  let saved = false;
+  const ov = dialog(existing ? 'Design bearbeiten' : 'Neues Design',
+    `<div class="fld" style="margin:6px 0 10px"><label style="background:var(--sc-high)">Name</label><input id="thn" value="${esc(existing ? existing.n : 'Mein Design')}" maxlength="30"></div>` +
+    THEME_FIELDS.map(([k,l]) => `<div class="crow"><label for="tc_${k}">${l}</label><input type="color" id="tc_${k}" data-tk="${k}" value="${c[k]}"></div>`).join(''),
+    [{label:'Abbrechen'},{label:'Speichern', filled:true, onClick: o => {
+      const n = o.querySelector('#thn').value.trim() || 'Mein Design';
+      if(existing){ existing.n = n; existing.c = {...c}; }
+      else { const id = 'u_' + Date.now().toString(36); P.custom_themes = [...customThemes(), {id, n, c:{...c}}]; P.theme = id; }
+      saved = true; save(); toast(existing ? 'Design gespeichert' : 'Design „' + n + '“ hinzugefügt');
+    }}],
+    {onClose: () => { applyTheme(); render(true); }});
   ov.querySelector('.body').style.gap = '0';
-  ov.querySelectorAll('[data-tk]').forEach(inp => inp.addEventListener('input', () => {
-    if(P.theme !== 'custom'){ P.theme_base = THEMES[P.theme] ? P.theme : 'grau'; P.theme_custom = {...themeColors()}; P.theme = 'custom'; }
-    P.theme_custom[inp.dataset.tk] = inp.value; applyTheme();
-  }));
+  ov.querySelectorAll('[data-tk]').forEach(inp => inp.addEventListener('input', () => { c[inp.dataset.tk] = inp.value; applyThemeColors(c); }));
 }
 
 /* ================= HILFSFUNKTIONEN UI ================= */
@@ -786,7 +799,7 @@ function settingsView(){
   ${themeCard()}
   <div class="card"><h3>Alle Daten löschen</h3><div class="sub">Lesefortschritt, Notizen und eigene Pläne auf diesem Gerät entfernen.</div><div style="height:12px"></div>
     <button class="btn" style="background:var(--error);color:var(--onerror);border-radius:12px;width:100%" data-a="reset">${ic('del')} Daten zurücksetzen</button></div>
-  <div class="center small muted" style="padding:8px 0 16px">Flächenlese Web · Version 1.4</div></div>`;
+  <div class="center small muted" style="padding:8px 0 16px">Flächenlese Web · Version 1.5</div></div>`;
 }
 
 /* ================= DIALOGE ================= */
@@ -1100,7 +1113,9 @@ const ACT = {
   pdf(){ exportPdf(); },
   ics(){ makeIcs(); },
   settheme(el){ P.theme = el.dataset.id; save(); applyTheme(); render(true); },
-  themecustom(){ themeDialog(); },
+  themenew(){ themeEditor(null); },
+  themeedit(){ const t = customThemes().find(x => x.id === P.theme); if(t) themeEditor(t); },
+  themedel(){ const t = customThemes().find(x => x.id === P.theme); if(!t) return; confirmDialog('Design löschen?', `„${t.n}“ wird entfernt.`, 'Löschen', () => { P.custom_themes = customThemes().filter(x => x.id !== t.id); P.theme = 'grau'; save(); applyTheme(); render(true); }); },
   install(){ if(deferredInstall){ deferredInstall.prompt(); deferredInstall.userChoice.finally(() => { deferredInstall = null; render(true); }); } },
   dismissInstall(){ P.install_hint_dismissed = true; save(); render(true); },
   reset(){ confirmDialog('Alle Daten löschen?', 'Lesefortschritt, Notizen, Verse und eigene Pläne auf diesem Gerät werden gelöscht. Das kann nicht rückgängig gemacht werden.', 'Löschen', () => { P = {}; save(); S.homeOff = 0; render(); toast('Alle Daten gelöscht'); }); }
@@ -1187,6 +1202,7 @@ function setupPullToRefresh(){
 
 /* ================= START ================= */
 load();
+migrateTheme();
 applyTheme();
 setupPullToRefresh();
 // Tageswechsel: beim Zurückkehren in die App "Heute" aktualisieren
