@@ -162,12 +162,11 @@ hr{border:0;border-top:1px solid var(--ov);margin:0;width:100%}
 #toast.on{opacity:1}
 .hint{background:var(--secc);color:var(--onsecc);border-radius:12px;padding:12px 14px;font-size:13px;line-height:1.45}
 #print{display:none}
-.themes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
-.thm{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 4px;border-radius:12px;border:1px solid var(--ov);font-size:12px;line-height:1.25;text-align:center;color:var(--on)}
-.thm.sel{border:2px solid var(--primary);padding:9px 3px}
-.sw{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;gap:3px;box-shadow:inset 0 0 0 1px rgba(128,128,128,.35)}
-.sw i{width:12px;height:12px;border-radius:50%;display:block}
-.crow{display:flex;align-items:center;gap:12px;padding:6px 0}
+.swrow{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+.dot{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:inset 0 0 0 1px rgba(128,128,128,.35)}
+.dot i{width:12px;height:12px;border-radius:50%;display:block}
+.dot.sel{box-shadow:0 0 0 2px var(--sc-high),0 0 0 4px var(--primary)}
+.crow{display:flex;align-items:center;gap:12px;padding:7px 0;color:var(--on)}
 .crow label{flex:1;font-size:15px}
 .crow input[type=color]{width:52px;height:34px;border:1px solid var(--outline);border-radius:10px;background:none;padding:2px;cursor:pointer}
 .crow input[type=color]::-webkit-color-swatch-wrapper{padding:0}
@@ -390,13 +389,22 @@ function applyTheme(){
   const m = document.querySelector('meta[name=theme-color]'); if(m) m.content = t.bg;
 }
 function themeCard(){
-  const cur = P.theme === 'custom' ? 'custom' : (THEMES[P.theme] ? P.theme : 'creme'), c = themeColors();
-  const sw = t => `<span class="sw" style="background:${t.bg}"><i style="background:${t.accent}"></i><i style="background:${t.read}"></i></span>`;
-  return `<div class="card"><div class="row">${ic('palette',24,'prim')}<h3>Farben &amp; Design</h3></div><div class="sub">Wähle eine Vorlage oder stelle jede Farbe selbst ein. Änderungen siehst du sofort.</div>
-    <div class="themes">${Object.entries(THEMES).map(([id,t]) => `<button class="thm ${cur===id?'sel':''}" data-a="settheme" data-id="${id}">${sw(t.c)}<span>${t.n}</span></button>`).join('')}${cur==='custom' ? `<button class="thm sel">${sw(c)}<span>Eigene Farben</span></button>` : ''}</div>
-    <div style="margin-top:18px;font-weight:700">Eigene Farben</div><div class="sub" style="margin-bottom:6px">Tippe auf ein Farbfeld, um es zu ändern.</div>
-    ${THEME_FIELDS.map(([k,l]) => `<div class="crow"><label for="tc_${k}">${l}</label><input type="color" id="tc_${k}" data-tk="${k}" value="${c[k]}"></div>`).join('')}
-    ${cur==='custom' ? `<div style="height:8px"></div><button class="btn tonal" style="width:100%;border-radius:12px" data-a="themereset">Zurück zur Vorlage „${esc((THEMES[P.theme_base]||THEMES.creme).n)}“</button>` : ''}</div>`;
+  const cur = P.theme === 'custom' ? 'custom' : (THEMES[P.theme] ? P.theme : 'creme');
+  const name = cur === 'custom' ? 'Eigene Farben' : THEMES[cur].n;
+  return `<div class="card"><h3>Design</h3><div class="sub">${esc(name)}</div>
+    <div class="swrow">${Object.entries(THEMES).map(([id,t]) => `<button class="dot ${cur===id?'sel':''}" data-a="settheme" data-id="${id}" aria-label="${esc(t.n)}" style="background:${t.c.bg}"><i style="background:${t.c.accent}"></i></button>`).join('')}</div>
+    <button class="tbtn" style="padding:8px 0 0" data-a="themecustom">Farben selbst anpassen</button></div>`;
+}
+function themeDialog(){
+  const c = themeColors();
+  const ov = dialog('Farben anpassen', THEME_FIELDS.map(([k,l]) => `<div class="crow"><label for="tc_${k}">${l}</label><input type="color" id="tc_${k}" data-tk="${k}" value="${c[k]}"></div>`).join(''),
+    [{label:'Zurücksetzen', onClick: () => { P.theme = P.theme_base || (P.theme !== 'custom' ? P.theme : 'creme'); save(); applyTheme(); render(true); }}, {label:'Fertig', filled:true}],
+    {onClose: () => { save(); render(true); }});
+  ov.querySelector('.body').style.gap = '0';
+  ov.querySelectorAll('[data-tk]').forEach(inp => inp.addEventListener('input', () => {
+    if(P.theme !== 'custom'){ P.theme_base = THEMES[P.theme] ? P.theme : 'creme'; P.theme_custom = {...themeColors()}; P.theme = 'custom'; }
+    P.theme_custom[inp.dataset.tk] = inp.value; applyTheme();
+  }));
 }
 
 /* ================= HILFSFUNKTIONEN UI ================= */
@@ -627,16 +635,7 @@ const AFTER = {
   },
   overview(){ pagerStep = d => { S.ovOff[S.ovTab] += d; render(); }; attachSwipe($('#pager'), pagerStep); },
   search(){ pagerStep = null; const q = $('#q'); q.addEventListener('input', () => { S.search = q.value; $('#qclr').style.visibility = q.value ? 'visible' : 'hidden'; renderResults(); }); $('#qclr').onclick = () => { S.search=''; q.value=''; $('#qclr').style.visibility='hidden'; renderResults(); q.focus(); }; renderResults(); },
-  settings(){
-    pagerStep = null;
-    document.querySelectorAll('[data-tk]').forEach(inp => {
-      inp.addEventListener('input', () => {
-        if(P.theme !== 'custom'){ P.theme_base = THEMES[P.theme] ? P.theme : 'creme'; P.theme_custom = {...themeColors()}; P.theme = 'custom'; }
-        P.theme_custom[inp.dataset.tk] = inp.value; applyTheme();
-      });
-      inp.addEventListener('change', () => { save(); render(true); });
-    });
-  },
+  settings(){ pagerStep = null; },
   note(r){ pagerStep = null; afterNote(r); }
 };
 
@@ -760,7 +759,6 @@ function settingsView(){
   const radio = (on, label, act, extra='') => `<button class="radio" data-a="${act}"><span class="rdot ${on?'on':''}"></span><span style="flex:1">${label}</span>${extra}</button>`;
   const custom = customIds().map(id => `<div class="row">${radio(t==='CUSTOM_'+id, esc(customName(id)), 'setplan" data-p="CUSTOM_'+esc(id))}<button class="ibtn sm" data-a="plancfg" data-id="${esc(id)}">${ic('settings',18)}</button><button class="ibtn sm" style="color:var(--error)" data-a="plandel" data-id="${esc(id)}">${ic('del',18)}</button></div>`).join('');
   return `<div class="page-pad"><h1>Einstellungen</h1>
-  ${themeCard()}
   <div class="card"><h3>Leseplan auswählen</h3><div style="height:8px"></div>
     ${radio(t==='LARGE','Große Flächenlese','setplan" data-p="LARGE')}${radio(t==='SMALL','Kleine Flächenlese','setplan" data-p="SMALL')}${custom}
     <div style="height:16px"></div><button class="btn tonal" style="width:100%;border-radius:12px" data-a="newplan">${ic('add')} Neuen Leseplan erstellen (.csv)</button></div>
@@ -780,9 +778,10 @@ function settingsView(){
   <div class="card"><div class="row">${ic('phone',24,'prim')}<h3>Als App installieren</h3></div><div style="height:8px"></div>
     ${isStandalone() ? '<div class="small" style="color:var(--primary)">✓ Flächenlese läuft als installierte App.</div>' : `${deferredInstall ? `<button class="btn" style="width:100%;border-radius:12px;margin-bottom:10px" data-a="install">${ic('download')} Jetzt installieren</button>` : ''}<div class="small muted" style="line-height:1.6"><b>Android (Chrome):</b> Menü ⋮ → „App installieren“ bzw. „Zum Startbildschirm hinzufügen“.<br><b>iPhone (Safari):</b> Teilen-Symbol → „Zum Home-Bildschirm“.<br>${isIOS() ? '<b style="color:var(--error)">Wichtig am iPhone:</b> Safari und die Home-Bildschirm-App haben getrennte Speicher. Nutze nur noch die App vom Home-Bildschirm.' : 'Danach startet Flächenlese wie eine normale App, auch offline.'}</div>`}
     <div class="small muted" style="margin-top:10px">Dauerhafter Speicher: ${storagePersisted === true ? '<span style="color:var(--primary)">aktiv ✓</span>' : storagePersisted === false ? 'nicht bestätigt (nach der Installation meist aktiv)' : 'unbekannt'}</div></div>
+  ${themeCard()}
   <div class="card"><h3>Alle Daten löschen</h3><div class="sub">Lesefortschritt, Notizen und eigene Pläne auf diesem Gerät entfernen.</div><div style="height:12px"></div>
     <button class="btn" style="background:var(--error);color:var(--onerror);border-radius:12px;width:100%" data-a="reset">${ic('del')} Daten zurücksetzen</button></div>
-  <div class="center small muted" style="padding:8px 0 16px">Flächenlese Web · Version 1.1</div></div>`;
+  <div class="center small muted" style="padding:8px 0 16px">Flächenlese Web · Version 1.2</div></div>`;
 }
 
 /* ================= DIALOGE ================= */
@@ -1096,7 +1095,7 @@ const ACT = {
   pdf(){ exportPdf(); },
   ics(){ makeIcs(); },
   settheme(el){ P.theme = el.dataset.id; save(); applyTheme(); render(true); },
-  themereset(){ P.theme = P.theme_base || 'creme'; save(); applyTheme(); render(true); },
+  themecustom(){ themeDialog(); },
   install(){ if(deferredInstall){ deferredInstall.prompt(); deferredInstall.userChoice.finally(() => { deferredInstall = null; render(true); }); } },
   dismissInstall(){ P.install_hint_dismissed = true; save(); render(true); },
   reset(){ confirmDialog('Alle Daten löschen?', 'Lesefortschritt, Notizen, Verse und eigene Pläne auf diesem Gerät werden gelöscht. Das kann nicht rückgängig gemacht werden.', 'Löschen', () => { P = {}; save(); S.homeOff = 0; render(); toast('Alle Daten gelöscht'); }); }
