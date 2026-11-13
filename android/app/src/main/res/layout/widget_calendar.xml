@@ -24,13 +24,13 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:layout_marginBottom="4dp">
-        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="MO" android:textColor="#80FFFFFF" android:textSize="10sp" android:gravity="center" android:textStyle="bold"/>
-        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="DI" android:textColor="#80FFFFFF" android:textSize="10sp" android:gravity="center" android:textStyle="bold"/>
-        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="MI" android:textColor="#80FFFFFF" android:textSize="10sp" android:gravity="center" android:textStyle="bold"/>
-        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="DO" android:textColor="#80FFFFFF" android:textSize="10sp" android:gravity="center" android:textStyle="bold"/>
-        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="FR" android:textColor="#80FFFFFF" android:textSize="10sp" android:gravity="center" android:textStyle="bold"/>
-        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="SA" android:textColor="#80FFFFFF" android:textSize="10sp" android:gravity="center" android:textStyle="bold"/>
-        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="SO" android:textColor="#80FFFFFF" android:textSize="10sp" android:gravity="center" android:textStyle="bold"/>
+        <TextView android:id="@+id/wd1" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="MO" android:textColor="#80FFFFFF" android:textSize="10sp" android:gravity="center" android:textStyle="bold"/>
+        <TextView android:id="@+id/wd2" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="DI" android:textColor="#80FFFFFF" android:textSize="10sp" android:gravity="center" android:textStyle="bold"/>
+        <TextView android:id="@+id/wd3" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="MI" android:textColor="#80FFFFFF" android:textSize="10sp" android:gravity="center" android:textStyle="bold"/>
+        <TextView android:id="@+id/wd4" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="DO" android:textColor="#80FFFFFF" android:textSize="10sp" android:gravity="center" android:textStyle="bold"/>
+        <TextView android:id="@+id/wd5" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="FR" android:textColor="#80FFFFFF" android:textSize="10sp" android:gravity="center" android:textStyle="bold"/>
+        <TextView android:id="@+id/wd6" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="SA" android:textColor="#80FFFFFF" android:textSize="10sp" android:gravity="center" android:textStyle="bold"/>
+        <TextView android:id="@+id/wd7" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="SO" android:textColor="#80FFFFFF" android:textSize="10sp" android:gravity="center" android:textStyle="bold"/>
     </LinearLayout>
 
     <GridView

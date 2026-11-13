@@ -1,6 +1,6 @@
 // Flächenlese – Offline-Unterstützung
 // Bei jeder neuen Version die Nummer erhöhen.
-const CACHE = 'flaechenlese-v10';
+const CACHE = 'flaechenlese-v11';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-maskable-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', e => {

@@ -400,7 +400,7 @@ function applyThemeColors(t){
   set('--ovbg', t.bg); set('--ovsurf', t.surface); set('--ovborder', mixC(t.text, t.bg, .82));
   st.colorScheme = light ? 'light' : 'dark';
   const m = document.querySelector('meta[name=theme-color]'); if(m) m.content = t.bg;
-  if(NATIVE){ try{ window.FLApp.setBars(t.bg, t.nav, light); }catch(e){} }
+  if(NATIVE){ try{ window.FLApp.setBars(t.bg, t.nav, light); }catch(e){} scheduleNativeSync(); }
 }
 function themeCard(){
   const cur = themeById(P.theme) ? (P.theme || 'grau') : 'grau', isCustom = cur.startsWith('u_');
@@ -800,7 +800,7 @@ function settingsView(){
   ${themeCard()}
   <div class="card"><h3>Alle Daten löschen</h3><div class="sub">Lesefortschritt, Notizen und eigene Pläne auf diesem Gerät entfernen.</div><div style="height:12px"></div>
     <button class="btn" style="background:var(--error);color:var(--onerror);border-radius:12px;width:100%" data-a="reset">${ic('del')} Daten zurücksetzen</button></div>
-  <div class="center small muted" style="padding:8px 0 16px">Flächenlese Web · Version 1.9</div></div>`;
+  <div class="center small muted" style="padding:8px 0 16px">Flächenlese Web · Version 1.10</div></div>`;
 }
 
 /* ================= DIALOGE ================= */
@@ -1234,7 +1234,9 @@ function nativeSync(){
       const reads = [...getSet(readKey(id))].map(x => x.length === 5 ? '2026-' + x : x).filter(x => /^\d{4}-\d{2}-\d{2}$/.test(x));
       plans[id] = {name: planLabel(id), days, reads};
     }
-    window.FLApp.sync(JSON.stringify({v:1, active: planType(), activeName: planName(planType()), notif:{enabled: !!(P.morning_enabled || P.evening_enabled), mh: P.morning_hour ?? 8, mm: P.morning_minute ?? 0, eh: P.evening_hour ?? 20, em: P.evening_minute ?? 0, plans: notifPlans()}, plans}));
+    const tc = themeColors();
+    const colors = {bg: tc.surface, text: tc.text, muted: mixC(tc.text, tc.surface, .4), btn: mixC(tc.surface, tc.text, .14), read: tc.read, onRead: bestOn(tc.read, [tc.accent, tc.text, tc.onAccent]), accent: tc.accent, onAccent: tc.onAccent};
+    window.FLApp.sync(JSON.stringify({v:1, colors, active: planType(), activeName: planName(planType()), notif:{enabled: !!(P.morning_enabled || P.evening_enabled), mh: P.morning_hour ?? 8, mm: P.morning_minute ?? 0, eh: P.evening_hour ?? 20, em: P.evening_minute ?? 0, plans: notifPlans()}, plans}));
   }catch(e){}
 }
 function applyNativeToggles(){
