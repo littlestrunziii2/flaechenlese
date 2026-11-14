@@ -21,6 +21,7 @@ class MainActivity : Activity() {
         const val START_URL = "https://littlestrunziii2.github.io/flaechenlese/"
         private const val HOST = "littlestrunziii2.github.io"
         private const val REQ_FILE = 7
+        const val REQ_FOLDER = 8
     }
 
     lateinit var web: WebView
@@ -122,6 +123,17 @@ class MainActivity : Activity() {
         if (requestCode == REQ_FILE) {
             fileCallback?.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(resultCode, data))
             fileCallback = null
+        } else if (requestCode == REQ_FOLDER) {
+            val uri = data?.data
+            if (resultCode == RESULT_OK && uri != null) {
+                try {
+                    contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+                } catch (e: Exception) { }
+                Backups.setFolder(this, uri)
+                Reminders.schedule(this)
+                val n = Backups.folderName(this).replace("\\", "\\\\").replace("'", "\\'")
+                web.evaluateJavascript("window.flBackupFolder && window.flBackupFolder('$n')", null)
+            }
         } else {
             @Suppress("DEPRECATION")
             super.onActivityResult(requestCode, resultCode, data)
@@ -144,6 +156,7 @@ class MainActivity : Activity() {
     override fun onResume() {
         super.onResume()
         if (::web.isInitialized) web.evaluateJavascript("window.flNativeResume && window.flNativeResume()", null)
+        Thread { Backups.runIfDue(applicationContext) }.start()
         Updates.check(this) { name -> Updates.showDialog(this, name) }
     }
 

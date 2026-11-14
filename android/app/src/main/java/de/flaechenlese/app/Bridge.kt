@@ -104,4 +104,28 @@ class Bridge(private val a: MainActivity) {
         val arr = try { JSONArray(plansJson) } catch (e: Exception) { JSONArray() }
         Reminders.fire(c, "morning", true, (0 until arr.length()).map { arr.getString(it) })
     }
+
+    @JavascriptInterface
+    fun setBackupData(csv: String) { Backups.setData(c, csv) }
+
+    @JavascriptInterface
+    fun pickBackupFolder() {
+        a.runOnUiThread {
+            val i = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).addFlags(
+                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION or
+                    Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION or Intent.FLAG_GRANT_PREFIX_URI_PERMISSION)
+            try { a.startActivityForResult(i, MainActivity.REQ_FOLDER) } catch (e: Exception) {
+                Toast.makeText(a, "Ordnerauswahl nicht verfügbar", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    @JavascriptInterface
+    fun backupStatus(): String = Backups.status(c)
+
+    @JavascriptInterface
+    fun backupNow(csv: String): String {
+        Backups.setData(c, csv)
+        return Backups.run(c)
+    }
 }

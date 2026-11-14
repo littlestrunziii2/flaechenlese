@@ -841,7 +841,8 @@ function settingsView(){
   <div class="card"><h3>Bibel-Übersetzung</h3><div class="sub">Standard-Übersetzung für YouVersion / bible.com</div><div style="height:12px"></div>
     ${TRANSLATIONS.map(([id,n]) => radio(tid===id, esc(n), 'settr" data-id="'+id+'" data-n="'+esc(n))).join('')}</div>
   ${notifCard()}
-  <div class="card"><h3>Daten &amp; Backup</h3><div class="sub">Deine Daten liegen nur auf diesem Gerät. Sichere sie regelmäßig, z. B. in Google Drive oder iCloud Drive. Gleiches CSV-Format wie die Android-App („CSV Export“) – so kannst du Daten zwischen beiden übertragen.</div><div style="height:12px"></div>
+  ${autoBackupCard()}
+  <div class="card"><h3>Daten &amp; Backup</h3><div class="sub">Deine Daten liegen nur auf diesem Gerät. Sichere sie regelmäßig, z. B. in Google Drive oder iCloud Drive. Gleiches CSV-Format wie die Android-App („CSV Export“) – so kannst du Daten zwischen beiden übertragen.${NATIVE ? '' : ' Automatische Backups in einen Ordner gibt es nur in der Android-App – Browser dürfen nicht von selbst Dateien speichern.'}</div><div style="height:12px"></div>
     <div class="small" style="margin-bottom:12px;line-height:1.6">${backupInfo()}</div>
     <div style="display:flex;flex-direction:column;gap:8px">
       <button class="btn tonal" style="border-radius:12px" data-a="csvexport">${ic('download')} Backup speichern (CSV)</button>
@@ -854,7 +855,7 @@ function settingsView(){
   ${themeCard()}
   <div class="card"><h3>Alle Daten löschen</h3><div class="sub">Lesefortschritt, Notizen und eigene Pläne auf diesem Gerät entfernen.</div><div style="height:12px"></div>
     <button class="btn" style="background:var(--error);color:var(--onerror);border-radius:12px;width:100%" data-a="reset">${ic('del')} Daten zurücksetzen</button></div>
-  <div class="center small muted" style="padding:8px 0 16px">Flächenlese Web · Version 1.15</div></div>`;
+  <div class="center small muted" style="padding:8px 0 16px">Flächenlese Web · Version 1.16</div></div>`;
 }
 
 /* ================= DIALOGE ================= */
@@ -967,7 +968,7 @@ function runAutofill(input, o){
 }
 
 /* ================= CSV: Export / Import (kompatibel zur Android-App) ================= */
-function exportCsv(){
+function buildCsv(){
   const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
   const head = ["Plan","Datum","Plan-Leseabschnitt","Eigene-Referenz","Tagesvers","Notiz","Gelesen","Wochen-Stelle","Wochen-Vers","Wochen-Notiz","Monats-Stelle","Monats-Vers","Jahres-Stelle","Jahres-Vers"];
   let out = '﻿' + head.map(h => `"${h}"`).join(';') + '\r\n';
@@ -997,6 +998,10 @@ function exportCsv(){
         d===1&&m===1 ? (P[`yr_${pre}_${y}`] ?? '') : '', d===1&&m===1 ? (P[`yv_${pre}_${y}`] ?? '') : ''].map(q).join(';') + '\r\n';
     }
   }
+  return out;
+}
+function exportCsv(){
+  const out = buildCsv();
   const t = new Date(); const ts = `${t.getFullYear()}${pad(t.getMonth()+1)}${pad(t.getDate())}_${pad(t.getHours())}${pad(t.getMinutes())}`;
   saveFile(`flchenlese_data_export_${ts}.csv`, out, 'text/csv', true).then(ok => { if(ok){ P.last_backup = Date.now(); save(); toast('✅ Backup erstellt'); if(current().name === 'settings') render(true); } });
 }
@@ -1170,6 +1175,7 @@ const ACT = {
   pdf(){ exportPdf(); },
   ics(){ makeIcs(); },
   notif(){ notifDialog(); },
+  autobackup(){ autoBackupDialog(); },
   toapp(){ transferToApp(); },
   settheme(el){ P.theme = el.dataset.id; save(); applyTheme(); render(true); },
   themenew(){ themeEditor(null); },
@@ -1224,6 +1230,53 @@ function notifCard(){
     <a class="btn tonal" style="width:100%;border-radius:12px" href="${'https://github.com/littlestrunziii2/flaechenlese/releases/latest/download/Flaechenlese.apk'}">${ic('download')} Android-App herunterladen</a>
     ${/Android/i.test(navigator.userAgent) ? `<div class="sub" style="margin:14px 0 8px;line-height:1.5">App schon installiert? Übertrage deinen Fortschritt, Notizen, Pläne und Designs aus diesem Browser in die App.</div>
     <button class="btn" style="width:100%;border-radius:12px" data-a="toapp">${ic('fwd')} Daten in die App übertragen</button>` : ''}</div>`;
+}
+const abCfg = () => { const a = P.auto_backup || {}; return {enabled: !!a.enabled, h: a.h ?? 20, m: a.m ?? 0, every: a.every ?? 1, keep: a.keep ?? 5}; };
+const abStatus = () => { try{ return JSON.parse(window.FLApp.backupStatus()); }catch(e){ return {folder:'', last:0, ok:true, msg:''}; } };
+const abTime = ms => { const t = new Date(ms); return `${pad(t.getDate())}.${pad(t.getMonth()+1)}.${t.getFullYear()} ${pad(t.getHours())}:${pad(t.getMinutes())}`; };
+function autoBackupCard(){
+  if(!NATIVE) return '';
+  const a = abCfg(), st = abStatus();
+  const sub = a.enabled && st.folder ? `Aktiv · ${a.every === 1 ? 'täglich' : 'alle ' + a.every + ' Tage'} um ${pad(a.h)}:${pad(a.m)} · ${a.keep} Backups · ${esc(st.folder)}` : 'Aus · Backups automatisch in einen Ordner oder Cloud-Ordner legen';
+  return `<button class="card" style="width:100%;text-align:left;display:flex;align-items:center;gap:16px" data-a="autobackup">${ic('download',24,'prim')}<div style="flex:1"><h3>Automatisches Backup</h3><div class="sub">${sub}</div></div>${ic('fwd')}</button>`;
+}
+function autoBackupDialog(){
+  const a = abCfg(); let on = a.enabled;
+  const t = (h,m) => `${pad(h)}:${pad(m)}`;
+  const statusHtml = () => { const st = abStatus();
+    if(!st.last && st.ok) return '<span class="muted">Noch kein automatisches Backup erstellt.</span>';
+    return st.ok ? `Letztes Backup: ${abTime(st.last)}` : `<span style="color:var(--error)">Letzter Versuch fehlgeschlagen: ${esc(st.msg)}</span>${st.last ? '<br>Letztes erfolgreiches Backup: ' + abTime(st.last) : ''}`; };
+  const folderTxt = () => { const st = abStatus(); return st.folder ? esc(st.folder) : '<span style="color:var(--error)">Noch kein Ordner gewählt</span>'; };
+  const opt = (v, cur, lbl) => `<option value="${v}" ${v === cur ? 'selected' : ''}>${lbl}</option>`;
+  const ov = dialog('Automatisches Backup', `
+    <button class="radio" id="aOn" style="justify-content:space-between"><b style="color:var(--on)">Automatisches Backup aktivieren</b><span class="chk ${on?'on':''}">${on?ic('check'):''}</span></button>
+    <hr><div style="font-size:14px;font-weight:500;color:var(--primary)">Speicherort</div>
+    <div class="small" id="aFolder" style="line-height:1.5">${folderTxt()}</div>
+    <button class="tbtn" id="aPick" style="align-self:flex-start;padding-left:0">Ordner wählen …</button>
+    <div class="small muted" style="line-height:1.5">Du kannst einen Ordner auf dem Handy oder einen Cloud-Ordner wählen, zum Beispiel in Google Drive. Die Dateien heißen „Flaechenlese_Backup_Datum_Uhrzeit.csv“.</div>
+    <hr><div style="font-size:14px;font-weight:500;color:var(--primary)">Zeitplan</div>
+    <div class="crow"><label for="aT">Uhrzeit</label><input type="time" id="aT" class="inp" style="width:120px;padding:8px 10px;border-radius:12px" value="${t(a.h, a.m)}"></div>
+    <div class="crow"><label for="aE">Wie oft</label><select id="aE" class="inp" style="width:150px;padding:8px 10px;border-radius:12px">${[[1,'Täglich'],[2,'Alle 2 Tage'],[3,'Alle 3 Tage'],[7,'Wöchentlich'],[14,'Alle 2 Wochen'],[30,'Monatlich']].map(([v,l]) => opt(v, a.every, l)).join('')}</select></div>
+    <div class="crow"><label for="aK">Backups behalten</label><input type="number" id="aK" class="inp" min="1" max="99" inputmode="numeric" style="width:90px;padding:8px 10px;border-radius:12px" value="${a.keep}"></div>
+    <div class="small muted" style="line-height:1.5">Ist die gewählte Anzahl erreicht, wird beim nächsten Backup das älteste automatisch gelöscht. Es werden nur Dateien gelöscht, die mit „Flaechenlese_Backup_“ beginnen.</div>
+    <hr><div class="small" id="aStat" style="line-height:1.6">${statusHtml()}</div>
+    <button class="tbtn" id="aNow" style="align-self:flex-start;padding-left:0">Jetzt sichern</button>`,
+    [{label:'Abbrechen'},{label:'Speichern', filled:true, onClick: o => {
+      const [h,m] = o.querySelector('#aT').value.split(':').map(Number);
+      const keep = Math.max(1, Math.min(99, parseInt(o.querySelector('#aK').value, 10) || 5));
+      if(on && !abStatus().folder){ toast('Bitte zuerst einen Ordner wählen'); return false; }
+      P.auto_backup = {enabled:on, h:h||0, m:m||0, every:+o.querySelector('#aE').value, keep};
+      save(); render(true); toast(on ? 'Automatisches Backup aktiv' : 'Automatisches Backup aus');
+    }}]);
+  ov.querySelector('.body').style.gap = '10px';
+  const setChk = (c, v) => { c.classList.toggle('on', v); c.innerHTML = v ? ic('check') : ''; };
+  ov.querySelector('#aOn').onclick = () => { on = !on; setChk(ov.querySelector('#aOn .chk'), on); if(on && !abStatus().folder) try{ window.FLApp.pickBackupFolder(); }catch(e){} };
+  ov.querySelector('#aPick').onclick = () => { try{ window.FLApp.pickBackupFolder(); }catch(e){ toast('Nicht möglich'); } };
+  window.flBackupFolder = () => { const f = ov.querySelector('#aFolder'); if(f) f.innerHTML = folderTxt(); };
+  ov.querySelector('#aNow').onclick = () => {
+    try{ const r = window.FLApp.backupNow(buildCsv()); toast(r.startsWith('ok') ? '✅ Backup gespeichert' : 'Fehlgeschlagen: ' + r.replace(/^error:/,'')); }catch(e){ toast('Nicht möglich'); }
+    ov.querySelector('#aStat').innerHTML = statusHtml();
+  };
 }
 function notifDialog(){
   let on = !!(P.morning_enabled || P.evening_enabled), plans = new Set(notifPlans());
@@ -1290,7 +1343,8 @@ function nativeSync(){
     }
     const tc = themeColors();
     const colors = {bg: tc.surface, text: tc.text, muted: mixC(tc.text, tc.surface, .4), btn: mixC(tc.surface, tc.text, .14), read: tc.read, onRead: bestOn(tc.read, [tc.accent, tc.text, tc.onAccent]), accent: tc.accent, onAccent: tc.onAccent};
-    window.FLApp.sync(JSON.stringify({v:1, colors, active: planType(), activeName: planName(planType()), notif:{enabled: !!(P.morning_enabled || P.evening_enabled), mh: P.morning_hour ?? 8, mm: P.morning_minute ?? 0, eh: P.evening_hour ?? 20, em: P.evening_minute ?? 0, plans: notifPlans()}, plans}));
+    window.FLApp.sync(JSON.stringify({v:1, colors, active: planType(), activeName: planName(planType()), notif:{enabled: !!(P.morning_enabled || P.evening_enabled), mh: P.morning_hour ?? 8, mm: P.morning_minute ?? 0, eh: P.evening_hour ?? 20, em: P.evening_minute ?? 0, plans: notifPlans()}, backup:{enabled: !!(P.auto_backup && P.auto_backup.enabled), h: abCfg().h, m: abCfg().m, every: abCfg().every, keep: abCfg().keep}, plans}));
+    if(P.auto_backup && P.auto_backup.enabled){ try{ window.FLApp.setBackupData(buildCsv()); }catch(e){} }
   }catch(e){}
 }
 function applyNativeToggles(){

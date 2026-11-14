@@ -28,6 +28,10 @@ object Reminders {
         am.cancel(pending(c, "evening"))
         am.cancel(pending(c, "midnight"))
         am.cancel(pending(c, "update"))
+        am.cancel(pending(c, "backup"))
+        Store.snapshot(c)?.optJSONObject("backup")?.let { b ->
+            if (b.optBoolean("enabled", false) && Backups.folder(c) != null) setAlarm(c, am, "backup", b.optInt("h", 20), b.optInt("m", 0))
+        }
         setAlarm(c, am, "update", 12, 17) // täglich nach App-Updates schauen
         setAlarm(c, am, "midnight", 0, 1) // Widgets nach Mitternacht aktualisieren
         val n = Store.snapshot(c)?.optJSONObject("notif") ?: return
@@ -48,7 +52,7 @@ object Reminders {
     private fun pending(c: Context, type: String): PendingIntent {
         val i = Intent(c, ReminderReceiver::class.java).setAction(ACTION).putExtra("type", type)
         return PendingIntent.getBroadcast(
-            c, when (type) { "morning" -> 1; "evening" -> 2; "update" -> 4; else -> 3 }, i,
+            c, when (type) { "morning" -> 1; "evening" -> 2; "update" -> 4; "backup" -> 5; else -> 3 }, i,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
     }
@@ -109,7 +113,10 @@ object Reminders {
 class ReminderReceiver : BroadcastReceiver() {
     override fun onReceive(c: Context, i: Intent) {
         val type = i.getStringExtra("type") ?: "morning"
-        if (type == "update") {
+        if (type == "backup") {
+            val pr = goAsync()
+            Thread { try { Backups.runIfDue(c) } finally { pr.finish() } }.start()
+        } else if (type == "update") {
             val pr = goAsync()
             Thread { try { Updates.backgroundCheck(c) } finally { pr.finish() } }.start()
         } else if (type != "midnight") Reminders.fire(c, type)
