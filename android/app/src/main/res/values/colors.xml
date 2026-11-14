@@ -1,6 +1,6 @@
 <resources>
     <color name="bg">#0F0F0F</color>
-    <color name="icon_bg_temp">#5B3FD9</color>
+    <color name="icon_bg_temp">#F1EEE8</color>
     <color name="icon_bg">#023021</color>
     <color name="icon_green">#003D29</color>
     <color name="widget_bg_color">#2C2C2E</color>
