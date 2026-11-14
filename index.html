@@ -176,6 +176,16 @@ hr{border:0;border-top:1px solid var(--ov);margin:0;width:100%}
 .crow .info{width:22px;height:22px;border-radius:50%;border:1px solid var(--outline);background:none;color:var(--on);font:600 12px/1 inherit;padding:0;cursor:pointer;opacity:.75}
 .crow .info.on{background:var(--outline)}
 .cinfo{font-size:13px;line-height:1.4;opacity:.8;padding:0 0 8px;color:var(--on)}
+.crow .sw{width:52px;height:34px;border:1px solid var(--outline);border-radius:10px;padding:0;cursor:pointer}
+.cp{padding:4px 0 12px;display:grid;gap:10px;touch-action:none}
+.cp-sv{position:relative;height:150px;border-radius:12px;cursor:crosshair;touch-action:none}
+.cp-sv i,.cp-hue i{position:absolute;width:20px;height:20px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.4),0 1px 4px rgba(0,0,0,.4);transform:translate(-50%,-50%);pointer-events:none}
+.cp-hue{position:relative;height:16px;border-radius:8px;background:linear-gradient(90deg,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00);cursor:pointer;touch-action:none}
+.cp-hue i{top:50%;width:22px;height:22px}
+.cp-f{display:flex;gap:8px;align-items:center}
+.cp-f input{min-width:0;width:100%;height:38px;border:1px solid var(--outline);border-radius:10px;background:none;color:var(--on);font:inherit;font-size:14px;text-align:center;padding:0 4px}
+.cp-f>div{flex:1;min-width:0}.cp-f>.hx{flex:2.4}
+.cp-f label{font-size:11px;opacity:.7;display:block;text-align:center}
 .crow input[type=color]{width:52px;height:34px;border:1px solid var(--outline);border-radius:10px;background:none;padding:2px;cursor:pointer}
 .crow input[type=color]::-webkit-color-swatch-wrapper{padding:0}
 .crow input[type=color]::-webkit-color-swatch{border:none;border-radius:7px}
@@ -421,12 +431,39 @@ function themeCard(){
     <div class="swrow">${Object.entries(THEMES).map(([id,t]) => dot(id, t)).join('')}${customThemes().map(t => dot(t.id, t)).join('')}<button class="dot add" data-a="themenew" aria-label="Neues Design">${ic('add',20)}</button></div>
     ${isCustom ? `<div class="row" style="gap:16px;margin-top:4px"><button class="tbtn" style="padding:8px 0 0" data-a="themeedit">Bearbeiten</button><button class="tbtn" style="padding:8px 0 0;color:var(--error)" data-a="themedel">Löschen</button></div>` : ''}</div>`;
 }
+function buildPicker(box, hex, onChange){
+  const toHsv = h => { const [r,g,b] = hex2rgb(h).map(v => v/255); const mx = Math.max(r,g,b), mn = Math.min(r,g,b), d = mx-mn; let H = 0;
+    if(d){ H = mx===r ? ((g-b)/d)%6 : mx===g ? (b-r)/d+2 : (r-g)/d+4; H = (H*60+360)%360; } return {h:H, s: mx ? d/mx : 0, v:mx}; };
+  const toHex = (h,sa,v) => { const f = n => { const k = (n+h/60)%6; return v - v*sa*Math.max(0, Math.min(k, 4-k, 1)); }; return rgb2hex([f(5)*255, f(3)*255, f(1)*255]); };
+  let st = toHsv(hex);
+  box.innerHTML = '<div class="cp"><div class="cp-sv"><i></i></div><div class="cp-hue"><i></i></div><div class="cp-f"><div class="hx"><label>Hex</label><input class="h" maxlength="7" autocapitalize="off" spellcheck="false"></div><div><label>R</label><input class="r" inputmode="numeric" maxlength="3"></div><div><label>G</label><input class="g" inputmode="numeric" maxlength="3"></div><div><label>B</label><input class="b" inputmode="numeric" maxlength="3"></div></div></div>';
+  const sv = box.querySelector('.cp-sv'), hu = box.querySelector('.cp-hue'), kn = sv.firstChild, hk = hu.firstChild;
+  const H = box.querySelector('.h'), R = box.querySelector('.r'), G = box.querySelector('.g'), B = box.querySelector('.b');
+  const paint = skip => {
+    const cur = toHex(st.h, st.s, st.v);
+    sv.style.background = `linear-gradient(to top,#000,transparent),linear-gradient(to right,#fff,${toHex(st.h,1,1)})`;
+    kn.style.left = st.s*100 + '%'; kn.style.top = (1-st.v)*100 + '%'; hk.style.left = st.h/360*100 + '%';
+    const rgb = hex2rgb(cur);
+    if(skip !== 'h') H.value = cur; if(skip !== 'rgb'){ R.value = Math.round(rgb[0]); G.value = Math.round(rgb[1]); B.value = Math.round(rgb[2]); }
+    return cur;
+  };
+  const apply = skip => onChange(paint(skip));
+  const drag = (el, fn) => { const mv = e => { const r = el.getBoundingClientRect(); fn(Math.max(0, Math.min(1, (e.clientX-r.left)/r.width)), Math.max(0, Math.min(1, (e.clientY-r.top)/r.height))); };
+    el.addEventListener('pointerdown', e => { el.setPointerCapture(e.pointerId); mv(e); el.onpointermove = mv; e.preventDefault(); });
+    const end = () => { el.onpointermove = null; }; el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end); };
+  drag(sv, (x,y) => { st.s = x; st.v = 1-y; apply(); });
+  drag(hu, x => { st.h = x*359.99; apply(); });
+  H.addEventListener('input', () => { let t = H.value.trim().replace(/^#?/,'#'); if(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(t)){ if(t.length===4) t = rgb2hex(hex2rgb(t)); const keepH = st.h; st = toHsv(t); if(!st.s || !st.v) st.h = keepH; apply('h'); } });
+  [R,G,B].forEach(i => i.addEventListener('input', () => { const v = [R,G,B].map(x => parseInt(x.value,10)); if(v.every(n => n>=0 && n<=255)){ const keepH = st.h; st = toHsv(rgb2hex(v)); if(!st.s || !st.v) st.h = keepH; apply('rgb'); } }));
+  paint();
+}
+
 function themeEditor(existing){
   const c = {...(existing ? {...THEMES.grau.c, ...existing.c} : themeColors())};
   let saved = false;
   const ov = dialog(existing ? 'Design bearbeiten' : 'Neues Design',
     `<div class="fld" style="margin:6px 0 10px"><label style="background:var(--sc-high)">Name</label><input id="thn" value="${esc(existing ? existing.n : 'Mein Design')}" maxlength="30"></div>` +
-    THEME_FIELDS.map(([k,l]) => `<div class="crow"><label for="tc_${k}">${l}</label><button type="button" class="info" data-info="${k}" aria-label="Info zu ${l}">i</button><input type="color" id="tc_${k}" data-tk="${k}" value="${c[k]}"></div><div class="cinfo" id="ci_${k}" hidden>${THEME_INFO[k]}</div>`).join(''),
+    THEME_FIELDS.map(([k,l]) => `<div class="crow"><label for="tc_${k}">${l}</label><button type="button" class="info" data-info="${k}" aria-label="Info zu ${l}">i</button><button type="button" class="sw" id="tc_${k}" data-tk="${k}" style="background:${c[k]}" aria-label="Farbe wählen: ${l}"></button></div><div class="cinfo" id="ci_${k}" hidden>${THEME_INFO[k]}</div><div id="cp_${k}" hidden></div>`).join(''),
     [{label:'Abbrechen'},{label:'Speichern', filled:true, onClick: o => {
       const n = o.querySelector('#thn').value.trim() || 'Mein Design';
       if(existing){ existing.n = n; existing.c = {...c}; }
@@ -436,7 +473,11 @@ function themeEditor(existing){
     {onClose: () => { applyTheme(); render(true); }});
   ov.querySelector('.body').style.gap = '0';
   ov.querySelectorAll('[data-info]').forEach(b => b.addEventListener('click', () => { const d = ov.querySelector('#ci_' + b.dataset.info); d.hidden = !d.hidden; b.classList.toggle('on', !d.hidden); }));
-  ov.querySelectorAll('[data-tk]').forEach(inp => inp.addEventListener('input', () => { c[inp.dataset.tk] = inp.value; applyThemeColors(c); }));
+  ov.querySelectorAll('[data-tk]').forEach(sw => sw.addEventListener('click', () => {
+    const k = sw.dataset.tk, box = ov.querySelector('#cp_' + k), open = box.hidden;
+    ov.querySelectorAll('[id^=cp_]').forEach(x => { x.hidden = true; });
+    if(open){ box.hidden = false; buildPicker(box, c[k], hex => { c[k] = hex; sw.style.background = hex; applyThemeColors(c); }); box.scrollIntoView({block:'nearest'}); }
+  }));
 }
 
 /* ================= HILFSFUNKTIONEN UI ================= */
@@ -813,7 +854,7 @@ function settingsView(){
   ${themeCard()}
   <div class="card"><h3>Alle Daten löschen</h3><div class="sub">Lesefortschritt, Notizen und eigene Pläne auf diesem Gerät entfernen.</div><div style="height:12px"></div>
     <button class="btn" style="background:var(--error);color:var(--onerror);border-radius:12px;width:100%" data-a="reset">${ic('del')} Daten zurücksetzen</button></div>
-  <div class="center small muted" style="padding:8px 0 16px">Flächenlese Web · Version 1.14</div></div>`;
+  <div class="center small muted" style="padding:8px 0 16px">Flächenlese Web · Version 1.15</div></div>`;
 }
 
 /* ================= DIALOGE ================= */
