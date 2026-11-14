@@ -173,6 +173,9 @@ hr{border:0;border-top:1px solid var(--ov);margin:0;width:100%}
 .dot.sel{box-shadow:0 0 0 2px var(--sc-high),0 0 0 4px var(--primary)}
 .crow{display:flex;align-items:center;gap:12px;padding:7px 0;color:var(--on)}
 .crow label{flex:1;font-size:15px}
+.crow .info{width:22px;height:22px;border-radius:50%;border:1px solid var(--outline);background:none;color:var(--on);font:600 12px/1 inherit;padding:0;cursor:pointer;opacity:.75}
+.crow .info.on{background:var(--outline)}
+.cinfo{font-size:13px;line-height:1.4;opacity:.8;padding:0 0 8px;color:var(--on)}
 .crow input[type=color]{width:52px;height:34px;border:1px solid var(--outline);border-radius:10px;background:none;padding:2px;cursor:pointer}
 .crow input[type=color]::-webkit-color-swatch-wrapper{padding:0}
 .crow input[type=color]::-webkit-color-swatch{border:none;border-radius:7px}
@@ -369,8 +372,16 @@ const THEMES = {
   terrakotta:{n:'Sand & Terrakotta (hell)', c:{bg:'#f6f0e8', surface:'#fffaf3', nav:'#ede4d8', text:'#2b211b', accent:'#b8613f', onAccent:'#ffffff', read:'#f0d6c8'}},
   petrol:    {n:'Petrol',              c:{bg:'#0d1f22', surface:'#173033', nav:'#0a191b', text:'#e6f1f1', accent:'#6fd0c8', onAccent:'#08302d', read:'#1f4a4a'}},
   nacht:     {n:'Nacht & Gold',        c:{bg:'#14171f', surface:'#232833', nav:'#1c2029', text:'#ece6d9', accent:'#d4b06a', onAccent:'#2a2110', read:'#4a3f26'}},
-  creme:     {n:'Icon-Grün & Creme',   c:{bg:'#0e2a20', surface:'#1a3a2e', nav:'#0a2219', text:'#f3ede0', accent:'#e8dcc0', onAccent:'#0e2a20', read:'#2f5a47'}},
-  pfirsich:  {n:'Bildfarben (Koralle & Orange)', c:{bg:'#ee5244', surface:'#f27048', nav:'#e63f65', text:'#2a0a10', accent:'#2a0a10', onAccent:'#f37d3f', read:'#ea515c'}}
+  creme:     {n:'Icon-Grün & Creme',   c:{bg:'#0e2a20', surface:'#1a3a2e', nav:'#0a2219', text:'#f3ede0', accent:'#e8dcc0', onAccent:'#0e2a20', read:'#2f5a47'}}
+};
+const THEME_INFO = {
+  bg:'Hintergrund aller Seiten der App (Heute, Kalender, Ansicht, Suchen, Einstellungen) – die große Fläche hinter den Karten.',
+  surface:'Karten, Fenster und Menüs in der App. Diese Farbe ist auch der Hintergrund der drei Widgets (Heute, Fortschritt, Kalender) auf dem Startbildschirm.',
+  nav:'Die Navigationsleiste ganz unten in der App mit Heute, Kalender, Ansicht, Suchen und Einstellungen.',
+  text:'Alle Texte und Zahlen in der App, auch die Schrift in den Widgets und die ungelesenen Tage im Kalender.',
+  accent:'Knöpfe, Schalter und der aktive Menüpunkt. Im Kalender ist es der heutige Tag, im Fortschritt-Widget der Balken.',
+  onAccent:'Schrift und Symbole, die auf einer Akzentfarbe liegen, zum Beispiel der Text in einem gefüllten Knopf.',
+  read:'Alles, was als gelesen markiert ist: der Haken, gelesene Tage im Kalender und im Kalender-Widget, der Haken im Heute-Widget.'
 };
 const THEME_FIELDS = [['bg','Hintergrund'],['surface','Karten & Fenster'],['nav','Navigationsleiste'],['text','Text'],['accent','Akzentfarbe'],['onAccent','Text auf Akzent'],['read','„Gelesen“-Markierung']];
 const hex2rgb = h => { h = String(h).replace('#',''); if(h.length===3) h = h.split('').map(c => c+c).join(''); const n = parseInt(h,16) || 0; return [n>>16&255, n>>8&255, n&255]; };
@@ -415,7 +426,7 @@ function themeEditor(existing){
   let saved = false;
   const ov = dialog(existing ? 'Design bearbeiten' : 'Neues Design',
     `<div class="fld" style="margin:6px 0 10px"><label style="background:var(--sc-high)">Name</label><input id="thn" value="${esc(existing ? existing.n : 'Mein Design')}" maxlength="30"></div>` +
-    THEME_FIELDS.map(([k,l]) => `<div class="crow"><label for="tc_${k}">${l}</label><input type="color" id="tc_${k}" data-tk="${k}" value="${c[k]}"></div>`).join(''),
+    THEME_FIELDS.map(([k,l]) => `<div class="crow"><label for="tc_${k}">${l}</label><button type="button" class="info" data-info="${k}" aria-label="Info zu ${l}">i</button><input type="color" id="tc_${k}" data-tk="${k}" value="${c[k]}"></div><div class="cinfo" id="ci_${k}" hidden>${THEME_INFO[k]}</div>`).join(''),
     [{label:'Abbrechen'},{label:'Speichern', filled:true, onClick: o => {
       const n = o.querySelector('#thn').value.trim() || 'Mein Design';
       if(existing){ existing.n = n; existing.c = {...c}; }
@@ -424,6 +435,7 @@ function themeEditor(existing){
     }}],
     {onClose: () => { applyTheme(); render(true); }});
   ov.querySelector('.body').style.gap = '0';
+  ov.querySelectorAll('[data-info]').forEach(b => b.addEventListener('click', () => { const d = ov.querySelector('#ci_' + b.dataset.info); d.hidden = !d.hidden; b.classList.toggle('on', !d.hidden); }));
   ov.querySelectorAll('[data-tk]').forEach(inp => inp.addEventListener('input', () => { c[inp.dataset.tk] = inp.value; applyThemeColors(c); }));
 }
 
@@ -801,7 +813,7 @@ function settingsView(){
   ${themeCard()}
   <div class="card"><h3>Alle Daten löschen</h3><div class="sub">Lesefortschritt, Notizen und eigene Pläne auf diesem Gerät entfernen.</div><div style="height:12px"></div>
     <button class="btn" style="background:var(--error);color:var(--onerror);border-radius:12px;width:100%" data-a="reset">${ic('del')} Daten zurücksetzen</button></div>
-  <div class="center small muted" style="padding:8px 0 16px">Flächenlese Web · Version 1.13</div></div>`;
+  <div class="center small muted" style="padding:8px 0 16px">Flächenlese Web · Version 1.14</div></div>`;
 }
 
 /* ================= DIALOGE ================= */
