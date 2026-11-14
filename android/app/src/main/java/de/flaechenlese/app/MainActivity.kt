@@ -22,6 +22,7 @@ class MainActivity : Activity() {
         private const val HOST = "littlestrunziii2.github.io"
         private const val REQ_FILE = 7
         const val REQ_FOLDER = 8
+        const val EXTRA_OPEN_UPDATE = "open_update"
     }
 
     lateinit var web: WebView
@@ -29,6 +30,7 @@ class MainActivity : Activity() {
     private var pageLoaded = false
     private var pendingImport: String? = null
     private var pendingOpenDate: String? = null
+    private var pendingOpenUpdate = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -94,6 +96,7 @@ class MainActivity : Activity() {
         i?.getStringExtra(EXTRA_OPEN_DATE)?.let { d ->
             if (d.matches(Regex("^\\d{4}-\\d{2}-\\d{2}$"))) { pendingOpenDate = d; i?.removeExtra(EXTRA_OPEN_DATE); deliverImport() }
         }
+        if (i?.getBooleanExtra(EXTRA_OPEN_UPDATE, false) == true) { pendingOpenUpdate = true; i.removeExtra(EXTRA_OPEN_UPDATE); deliverImport() }
         val u = i?.data ?: return
         if (u.scheme != "flaechenlese" || u.host != "import") return
         val d = u.getQueryParameter("d") ?: return
@@ -108,6 +111,10 @@ class MainActivity : Activity() {
         pendingOpenDate?.let { day ->
             pendingOpenDate = null
             web.postDelayed({ web.evaluateJavascript("window.flOpenDay && window.flOpenDay('$day')", null) }, 400)
+        }
+        if (pendingOpenUpdate) {
+            pendingOpenUpdate = false
+            web.postDelayed({ web.evaluateJavascript("window.flOpenUpdate && window.flOpenUpdate()", null) }, 700)
         }
         val d = pendingImport ?: return
         pendingImport = null

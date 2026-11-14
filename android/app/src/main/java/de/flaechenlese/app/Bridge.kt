@@ -128,4 +128,26 @@ class Bridge(private val a: MainActivity) {
         Backups.setData(c, csv)
         return Backups.run(c)
     }
+
+    private fun js(code: String) { a.runOnUiThread { a.web.evaluateJavascript(code, null) } }
+    private fun q(s: String) = org.json.JSONObject.quote(s)
+
+    @JavascriptInterface
+    fun appVersion(): String = Updates.versionName(c)
+
+    @JavascriptInterface
+    fun checkUpdate() {
+        Updates.checkNow(c) { l ->
+            val o = org.json.JSONObject()
+            if (l == null) o.put("error", true) else {
+                o.put("available", l.first > Updates.installedCode(c)).put("name", l.second)
+            }
+            js("window.flUpdateInfo && window.flUpdateInfo(${o})")
+        }
+    }
+
+    @JavascriptInterface
+    fun installUpdate() {
+        Updates.install(c, { p -> js("window.flUpdateProgress && window.flUpdateProgress($p)") }, { m -> js("window.flUpdateDone && window.flUpdateDone(${q(m)})") })
+    }
 }

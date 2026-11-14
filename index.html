@@ -842,6 +842,7 @@ function settingsView(){
     ${TRANSLATIONS.map(([id,n]) => radio(tid===id, esc(n), 'settr" data-id="'+id+'" data-n="'+esc(n))).join('')}</div>
   ${notifCard()}
   ${autoBackupCard()}
+  ${updateCard()}
   <div class="card"><h3>Daten &amp; Backup</h3><div class="sub">Deine Daten liegen nur auf diesem Gerät. Sichere sie regelmäßig, z. B. in Google Drive oder iCloud Drive. Gleiches CSV-Format wie die Android-App („CSV Export“) – so kannst du Daten zwischen beiden übertragen.${NATIVE ? '' : ' Automatische Backups in einen Ordner gibt es nur in der Android-App – Browser dürfen nicht von selbst Dateien speichern.'}</div><div style="height:12px"></div>
     <div class="small" style="margin-bottom:12px;line-height:1.6">${backupInfo()}</div>
     <div style="display:flex;flex-direction:column;gap:8px">
@@ -855,7 +856,7 @@ function settingsView(){
   ${themeCard()}
   <div class="card"><h3>Alle Daten löschen</h3><div class="sub">Lesefortschritt, Notizen und eigene Pläne auf diesem Gerät entfernen.</div><div style="height:12px"></div>
     <button class="btn" style="background:var(--error);color:var(--onerror);border-radius:12px;width:100%" data-a="reset">${ic('del')} Daten zurücksetzen</button></div>
-  <div class="center small muted" style="padding:8px 0 16px">Flächenlese Web · Version 1.16</div></div>`;
+  <div class="center small muted" style="padding:8px 0 16px">Flächenlese Web · Version 1.17</div></div>`;
 }
 
 /* ================= DIALOGE ================= */
@@ -1176,6 +1177,7 @@ const ACT = {
   ics(){ makeIcs(); },
   notif(){ notifDialog(); },
   autobackup(){ autoBackupDialog(); },
+  appupdate(){ updateDialog(); },
   toapp(){ transferToApp(); },
   settheme(el){ P.theme = el.dataset.id; save(); applyTheme(); render(true); },
   themenew(){ themeEditor(null); },
@@ -1278,6 +1280,32 @@ function autoBackupDialog(){
     ov.querySelector('#aStat').innerHTML = statusHtml();
   };
 }
+function updateCard(){
+  if(!NATIVE) return '';
+  let v = ''; try{ v = window.FLApp.appVersion(); }catch(e){}
+  return `<button class="card" style="width:100%;text-align:left;display:flex;align-items:center;gap:16px" data-a="appupdate">${ic('download',24,'prim')}<div style="flex:1"><h3>App-Update</h3><div class="sub">${v ? 'Installierte Version ' + esc(v) + ' · ' : ''}Nach neuer Version suchen und direkt installieren</div></div>${ic('fwd')}</button>`;
+}
+function updateDialog(){
+  if(!NATIVE || document.querySelector('#upDlg')) return;
+  let v = ''; try{ v = window.FLApp.appVersion(); }catch(e){}
+  let avail = false, busy = false;
+  const ov = dialog('App-Update', `<div id="upDlg"><div id="upMsg" style="line-height:1.6">Suche nach Updates …</div>
+    <div id="upBar" style="height:6px;border-radius:3px;background:var(--outline);margin-top:12px;overflow:hidden" hidden><div id="upFill" style="height:100%;width:0;background:var(--primary)"></div></div>
+    <div class="small muted" style="margin-top:12px;line-height:1.5">Installierte Version: ${esc(v || '?')}. Deine Daten bleiben beim Update erhalten. Android fragt dich einmal zur Bestätigung.</div></div>`,
+    [{label:'Schließen'},{label:'Aktualisieren', filled:true, onClick: o => {
+      if(!avail){ toast('Kein Update verfügbar'); return false; }
+      if(busy) return false; busy = true;
+      o.querySelector('#upBar').hidden = false; o.querySelector('#upMsg').textContent = 'Update wird geladen …';
+      try{ window.FLApp.installUpdate(); }catch(e){ busy = false; o.querySelector('#upMsg').textContent = 'Nicht möglich.'; }
+      return false;
+    }}]);
+  const msg = t => { const m = ov.querySelector('#upMsg'); if(m) m.innerHTML = t; };
+  window.flUpdateInfo = r => { if(r.error){ msg('Prüfen nicht möglich. Bist du online?'); return; } avail = !!r.available; msg(avail ? `<b>${esc(r.name)}</b> ist verfügbar.` : '✓ Du hast die neueste Version.'); };
+  window.flUpdateProgress = p => { const f = ov.querySelector('#upFill'); if(f) f.style.width = p + '%'; msg(`Update wird geladen … ${p} %`); };
+  window.flUpdateDone = m => { busy = false; msg(esc(m)); };
+  try{ window.FLApp.checkUpdate(); }catch(e){ msg('Nicht möglich.'); }
+}
+window.flOpenUpdate = () => updateDialog();
 function notifDialog(){
   let on = !!(P.morning_enabled || P.evening_enabled), plans = new Set(notifPlans());
   const t = (h,m) => `${pad(h)}:${pad(m)}`;

@@ -69,24 +69,87 @@ object Updates {
         val nm = c.getSystemService(NotificationManager::class.java) ?: return
         nm.createNotificationChannel(NotificationChannel(CHANNEL, "App-Updates", NotificationManager.IMPORTANCE_DEFAULT))
         val open = PendingIntent.getActivity(
-            c, 40, Intent(Intent.ACTION_VIEW, Uri.parse(APK_URL)),
+            c, 40, Intent(c, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP).putExtra(MainActivity.EXTRA_OPEN_UPDATE, true),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
         nm.notify(40, Notification.Builder(c, CHANNEL)
             .setSmallIcon(R.drawable.ic_stat_book)
             .setContentTitle("Update für Flächenlese verfügbar")
-            .setContentText("$name – zum Herunterladen tippen")
+            .setContentText("$name – zum Installieren tippen")
             .setContentIntent(open).setAutoCancel(true).build())
     }
 
     /** Hinweis in der App mit Knopf zum Herunterladen. */
-    fun showDialog(a: Activity, name: String) {
+    fun showDialog(a: MainActivity, name: String) {
         if (a.isFinishing) return
         AlertDialog.Builder(a)
             .setTitle("Update verfügbar")
-            .setMessage("$name ist verfügbar. Jetzt herunterladen und über die bestehende App installieren? Deine Daten bleiben erhalten.")
-            .setPositiveButton("Herunterladen") { _, _ -> a.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(APK_URL))) }
+            .setMessage("$name ist verfügbar. Jetzt direkt in der App aktualisieren? Deine Daten bleiben erhalten.")
+            .setPositiveButton("Aktualisieren") { _, _ -> a.web.evaluateJavascript("window.flOpenUpdate && window.flOpenUpdate()", null) }
             .setNegativeButton("Später", null)
             .show()
+    }
+
+    /** Prüft sofort (Hintergrund) und meldet Ergebnis: Pair(neueste Nummer, Name) oder null bei Fehler. */
+    fun checkNow(c: Context, cb: (Pair<Int, String>?) -> Unit) {
+        Thread { cb(latest()) }.start()
+    }
+
+    fun versionName(c: Context): String = try { c.packageManager.getPackageInfo(c.packageName, 0).versionName ?: "" } catch (e: Exception) { "" }
+
+    /** Lädt die neue APK und startet die Installation (Android fragt einmal nach Bestätigung). */
+    fun install(c: Context, onProgress: (Int) -> Unit, onDone: (String) -> Unit) {
+        Thread {
+            try {
+                val pm = c.packageManager
+                if (Build.VERSION.SDK_INT >= 26 && !pm.canRequestPackageInstalls()) {
+                    c.startActivity(Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:" + c.packageName)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                    onDone("Bitte „Installieren aus dieser Quelle“ erlauben und dann nochmal auf „Aktualisieren“ tippen.")
+                    return@Thread
+                }
+                val file = java.io.File(c.cacheDir, "update.apk")
+                val con = URL(APK_URL).openConnection() as HttpURLConnection
+                con.connectTimeout = 15000; con.readTimeout = 30000; con.instanceFollowRedirects = true
+                val total = con.contentLengthLong
+                var done = 0L; var lastPct = -1
+                con.inputStream.use { inp -> file.outputStream().use { out ->
+                    val buf = ByteArray(32768)
+                    while (true) {
+                        val n = inp.read(buf); if (n < 0) break
+                        out.write(buf, 0, n); done += n
+                        if (total > 0) { val p = (done * 100 / total).toInt(); if (p != lastPct) { lastPct = p; onProgress(p) } }
+                    }
+                } }
+                if (file.length() < 100_000) { onDone("Download unvollständig – bitte später erneut versuchen."); return@Thread }
+                val inst = pm.packageInstaller
+                val params = android.content.pm.PackageInstaller.SessionParams(android.content.pm.PackageInstaller.SessionParams.MODE_FULL_INSTALL)
+                params.setAppPackageName(c.packageName)
+                val id = inst.createSession(params)
+                inst.openSession(id).use { s ->
+                    s.openWrite("app", 0, file.length()).use { o -> file.inputStream().use { it.copyTo(o) }; s.fsync(o) }
+                    val pi = PendingIntent.getBroadcast(c, 41, Intent(c, UpdateReceiver::class.java), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE)
+                    s.commit(pi.intentSender)
+                }
+                onDone("Installation gestartet – bitte bestätigen.")
+            } catch (e: Exception) {
+                onDone("Fehlgeschlagen: " + (e.message ?: "unbekannter Fehler"))
+            }
+        }.start()
+    }
+}
+
+/** Empfängt das Ergebnis der Installation und zeigt Android die Bestätigungsabfrage. */
+class UpdateReceiver : android.content.BroadcastReceiver() {
+    override fun onReceive(c: Context, i: Intent) {
+        when (i.getIntExtra(android.content.pm.PackageInstaller.EXTRA_STATUS, -1)) {
+            android.content.pm.PackageInstaller.STATUS_PENDING_USER_ACTION -> {
+                @Suppress("DEPRECATION")
+                val confirm = i.getParcelableExtra<Intent>(Intent.EXTRA_INTENT)
+                confirm?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                if (confirm != null) c.startActivity(confirm)
+            }
+            android.content.pm.PackageInstaller.STATUS_SUCCESS -> { }
+            else -> android.widget.Toast.makeText(c, "Update nicht installiert: " + (i.getStringExtra(android.content.pm.PackageInstaller.EXTRA_STATUS_MESSAGE) ?: ""), android.widget.Toast.LENGTH_LONG).show()
+        }
     }
 }
