@@ -103,6 +103,7 @@ nav span.l{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:1
 .tbl{border:1px solid var(--ovborder);border-radius:12px;overflow:hidden;background:var(--ovsurf)}
 .tr{display:flex;border-top:.5px solid var(--ovborder)}
 .tr:first-child{border-top:0}
+.wk .tc{padding:calc(6px*var(--ws,1)) 6px}.wk .th{padding:calc(10px*var(--ws,1)) 0}.wk .wvrow{padding:calc(12px*var(--ws,1)) 12px}
 .th{font-size:10px;font-weight:700;color:var(--primary);letter-spacing:1px;text-align:center;padding:10px 0}
 .tc{padding:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;border-left:.5px solid var(--ovborder);min-width:0}
 .tc:first-child{border-left:0}
@@ -714,7 +715,7 @@ const AFTER = {
     pagerStep = d => { S.calOff += d; render(); }; attachSwipe($('#pager'), pagerStep);
     const sel = document.querySelector('#caltabs .sel'); if(sel) sel.scrollIntoView({inline:'center', block:'nearest'});
   },
-  overview(){ pagerStep = d => { S.ovOff[S.ovTab] += d; render(); }; attachSwipe($('#pager'), pagerStep); },
+  overview(){ pagerStep = d => { S.ovOff[S.ovTab] += d; render(); }; attachSwipe($('#pager'), pagerStep); if(S.ovTab === 0) requestAnimationFrame(fitWeek); },
   search(){ pagerStep = null; const q = $('#q'); q.addEventListener('input', () => { S.search = q.value; $('#qclr').style.visibility = q.value ? 'visible' : 'hidden'; renderResults(); }); $('#qclr').onclick = () => { S.search=''; q.value=''; $('#qclr').style.visibility='hidden'; renderResults(); q.focus(); }; renderResults(); },
   settings(){ pagerStep = null; },
   note(r){ pagerStep = null; afterNote(r); }
@@ -728,16 +729,25 @@ function weekView(base){
   for(const a of days){
     const ps = splitPassages(effPassage(a)), r = getN('r', a), v = getN('v', a), n = getN('n', a);
     rows += `<div class="tr">
-      <div class="tc" style="flex:1.2"><div style="font-size:8px;font-weight:700;color:var(--onsv)">${WDS[dow(a)-1]}. ${pad(a.d)}.${pad(a.m)}.</div>
-        ${ps.map(p => refLink(p, '', esc(p)).replace('<a ', '<a style="font-size:11px;line-height:13px;font-weight:800;font-style:italic;color:var(--on);padding:2px 4px;display:block" ').replace('<span ', '<span style="font-size:11px;font-weight:800;font-style:italic;color:var(--on)" ')).join('')}</div>
-      <button class="tc" style="flex:1" data-a="wkverse" data-date="${iso(a)}">${r ? refLink(r,'').replace(/^<(a|span) /, '<$1 style="font-size:9px;font-weight:700;color:var(--primary)" ') : ''}${v ? `<div class="clamp" style="-webkit-line-clamp:4;font-size:8px;line-height:10px;color:color-mix(in srgb,var(--on) 80%,transparent)">${esc(v)}</div>` : ''}</button>
-      <button class="tc" style="flex:1" data-a="wknote" data-date="${iso(a)}"><div class="clamp" style="-webkit-line-clamp:5;font-size:8px;line-height:10px;color:color-mix(in srgb,var(--on) 60%,transparent)">${esc(n)}</div></button>
+      <div class="tc" style="flex:1.2"><div style="font-size:calc(8px*var(--ws,1));font-weight:700;color:var(--onsv)">${WDS[dow(a)-1]}. ${pad(a.d)}.${pad(a.m)}.</div>
+        ${ps.map(p => refLink(p, '', esc(p)).replace('<a ', '<a style="font-size:calc(11px*(.4 + .6*var(--ws,1)));line-height:calc(13px*(.4 + .6*var(--ws,1)));font-weight:800;font-style:italic;color:var(--on);padding:2px 4px;display:block" ').replace('<span ', '<span style="font-size:calc(11px*(.4 + .6*var(--ws,1)));font-weight:800;font-style:italic;color:var(--on)" ')).join('')}</div>
+      <button class="tc" style="flex:1" data-a="wkverse" data-date="${iso(a)}">${r ? refLink(r,'').replace(/^<(a|span) /, '<$1 style="font-size:calc(9px*var(--ws,1));font-weight:700;color:var(--primary)" ') : ''}${v ? `<div class="clamp" style="-webkit-line-clamp:var(--lcv,4);font-size:calc(8px*var(--ws,1));line-height:calc(10px*var(--ws,1));color:color-mix(in srgb,var(--on) 80%,transparent)">${esc(v)}</div>` : ''}</button>
+      <button class="tc" style="flex:1" data-a="wknote" data-date="${iso(a)}"><div class="clamp" style="-webkit-line-clamp:var(--lcn,5);font-size:calc(8px*var(--ws,1));line-height:calc(10px*var(--ws,1));color:color-mix(in srgb,var(--on) 60%,transparent)">${esc(n)}</div></button>
     </div>`;
   }
   return `<div class="ovhead"><span style="font-size:16px;font-weight:900;letter-spacing:1px">KW ${isoWeek(mon)} · ${MN[sun.m-1].toUpperCase()}</span><span style="font-size:11px;color:var(--primary);letter-spacing:4px">${sun.y}</span></div>
-  <div class="tbl"><div class="tr" style="background:var(--ovsurf)"><div class="th" style="flex:1.2">STELLE</div><div class="th" style="flex:1">VERS</div><div class="th" style="flex:1">NOTIZ</div></div>${rows}
-  <button class="wvrow" style="width:100%" data-a="${wr ? 'wview' : 'wedit'}" data-date="${iso(sun)}"><div style="font-size:9px;font-weight:700;color:var(--primary);letter-spacing:1px">WOCHENVERS</div>
-  ${wr ? `<div style="font-size:13px;font-weight:800;color:var(--on)">${esc(wr)}</div>${wv ? `<div style="font-size:11px;font-style:italic;color:color-mix(in srgb,var(--on) 80%,transparent);line-height:14px">${esc(wv)}</div>` : ''}` : '<div style="font-size:12px;color:var(--onsv)">Kein Vers gewählt</div>'}</button></div>`;
+  <div class="tbl wk"><div class="tr" style="background:var(--ovsurf)"><div class="th" style="flex:1.2">STELLE</div><div class="th" style="flex:1">VERS</div><div class="th" style="flex:1">NOTIZ</div></div>${rows}
+  <button class="wvrow" style="width:100%" data-a="${wr ? 'wview' : 'wedit'}" data-date="${iso(sun)}"><div style="font-size:calc(9px*var(--ws,1));font-weight:700;color:var(--primary);letter-spacing:1px">WOCHENVERS</div>
+  ${wr ? `<div style="font-size:calc(13px*var(--ws,1));font-weight:800;color:var(--on)">${esc(wr)}</div>${wv ? `<div style="font-size:calc(11px*var(--ws,1));font-style:italic;color:color-mix(in srgb,var(--on) 80%,transparent);line-height:calc(14px*var(--ws,1))">${esc(wv)}</div>` : ''}` : '<div style="font-size:12px;color:var(--onsv)">Kein Vers gewählt</div>'}</button></div>`;
+}
+/* Wochentabelle: Schrift und Abstände an den freien Platz anpassen */
+function fitWeek(){
+  const t = document.querySelector('.wk'), scr = $('#screen'); if(!t || !scr) return;
+  const avail = scr.getBoundingClientRect().bottom - t.getBoundingClientRect().top - 12;
+  const set = (s, lines) => { t.style.setProperty('--ws', s); t.style.setProperty('--lcv', lines); t.style.setProperty('--lcn', lines); };
+  for(let s = 1.5; s >= 1; s -= 0.05){ set(s.toFixed(2), 99); if(t.offsetHeight <= avail) return; }
+  set(1, 99); if(t.offsetHeight <= avail) return;
+  t.style.removeProperty('--lcv'); t.style.removeProperty('--lcn'); t.style.setProperty('--ws', 1);
 }
 function sundaysOf(y, m){ const out = []; let a = {y,m,d:1}; a = addDays(a, (7 - dow(a)) % 7); while(a.m === m){ out.push(a); a = addDays(a, 7); } return out; }
 function monthView(base){
@@ -861,7 +871,7 @@ function settingsView(){
   ${themeCard()}
   <div class="card"><h3>Alle Daten löschen</h3><div class="sub">Lesefortschritt, Notizen und eigene Pläne auf diesem Gerät entfernen.</div><div style="height:12px"></div>
     <button class="btn" style="background:var(--error);color:var(--onerror);border-radius:12px;width:100%" data-a="reset">${ic('del')} Daten zurücksetzen</button></div>
-  <div class="center small muted" style="padding:8px 0 16px">Flächenlese Web · Version 1.19</div></div>`;
+  <div class="center small muted" style="padding:8px 0 16px">Flächenlese Web · Version 1.20</div></div>`;
 }
 
 /* ================= DIALOGE ================= */
