@@ -732,7 +732,7 @@ function weekView(base){
     rows += `<div class="tr">
       <div class="tc" style="flex:1.2"><div style="font-size:calc(8px*var(--ws,1));font-weight:700;color:var(--onsv)">${WDS[dow(a)-1]}. ${pad(a.d)}.${pad(a.m)}.</div>
         ${ps.map(p => refLink(p, '', esc(p)).replace('<a ', '<a style="font-size:calc(11px*(.4 + .6*var(--ws,1)));line-height:calc(13px*(.4 + .6*var(--ws,1)));font-weight:800;font-style:italic;color:var(--on);padding:2px 4px;display:block" ').replace('<span ', '<span style="font-size:calc(11px*(.4 + .6*var(--ws,1)));font-weight:800;font-style:italic;color:var(--on)" ')).join('')}</div>
-      <button class="tc" style="flex:1" data-a="wkverse" data-date="${iso(a)}">${r ? refLink(r,'').replace(/^<(a|span) /, '<$1 style="font-size:calc(9px*var(--ws,1));font-weight:700;color:var(--primary)" ') : ''}${v ? `<div class="clamp" style="-webkit-line-clamp:var(--lcv,4);font-size:calc(8px*var(--ws,1));line-height:calc(10px*var(--ws,1));color:color-mix(in srgb,var(--on) 80%,transparent)">${esc(v)}</div>` : ''}</button>
+      <button class="tc" style="flex:1" data-a="wkverse" data-date="${iso(a)}">${r ? refLink(r,'').replace(/^<(a|span) /, '<$1 style="font-size:calc(9px*var(--ws,1));font-weight:700;color:var(--primary)" ') : ''}${v ? `<div class="clamp" style="margin-top:calc(4px*var(--ws,1));-webkit-line-clamp:var(--lcv,4);font-size:calc(8px*var(--ws,1));line-height:calc(10px*var(--ws,1));color:color-mix(in srgb,var(--on) 80%,transparent)">${esc(v)}</div>` : ''}</button>
       <button class="tc" style="flex:1" data-a="wknote" data-date="${iso(a)}"><div class="clamp" style="-webkit-line-clamp:var(--lcn,5);font-size:calc(8px*var(--ws,1));line-height:calc(10px*var(--ws,1));color:color-mix(in srgb,var(--on) 60%,transparent)">${esc(n)}</div></button>
     </div>`;
   }
@@ -872,7 +872,7 @@ function settingsView(){
   ${themeCard()}
   <div class="card"><h3>Alle Daten löschen</h3><div class="sub">Lesefortschritt, Notizen und eigene Pläne auf diesem Gerät entfernen.</div><div style="height:12px"></div>
     <button class="btn" style="background:var(--error);color:var(--onerror);border-radius:12px;width:100%" data-a="reset">${ic('del')} Daten zurücksetzen</button></div>
-  <div class="center small muted" style="padding:8px 0 16px">Flächenlese Web · Version 1.21</div></div>`;
+  <div class="center small muted" style="padding:8px 0 16px">Flächenlese Web · Version 1.22</div></div>`;
 }
 
 /* ================= DIALOGE ================= */
