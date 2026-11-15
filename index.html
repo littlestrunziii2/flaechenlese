@@ -123,8 +123,10 @@ h1{font-size:28px;font-weight:700;margin:0 0 24px}
 .chk svg{width:16px;height:16px}
 .muted{color:var(--onsv)}
 .small{font-size:12px}
-.topbar{display:flex;align-items:center;padding:calc(8px + var(--safe-t)) 4px 8px;gap:4px}
-.topbar .ttl{flex:1;text-align:center;display:flex;flex-direction:column;align-items:center}
+.topbar{display:flex;align-items:center;padding:calc(8px + var(--safe-t)) 4px 8px;gap:4px;position:relative;min-height:calc(56px + var(--safe-t))}
+.topbar .ttl{position:absolute;left:112px;right:112px;top:calc(8px + var(--safe-t));bottom:8px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+.topbar .ttl>div{max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topbar .ttl+*{margin-left:auto}
 .fld{position:relative;width:100%}
 .fld label{position:absolute;left:12px;top:-8px;background:var(--surface);padding:0 4px;font-size:12px;color:var(--onsv)}
 .fld input,.fld textarea,.inp{width:100%;background:transparent;border:1px solid var(--outline);border-radius:16px;color:var(--on);font:inherit;font-size:16px;padding:16px;outline:none;resize:vertical}
@@ -803,8 +805,8 @@ function noteView(r){
     ${r.edit ? `<button class="ibtn" data-a="autofill">${ic('auto')}</button><button class="ibtn" data-a="nsave">${ic('check')}</button>` : `<button class="ibtn" style="color:var(--on)" data-a="nedit">${ic('edit')}</button>`}</div>`;
   let body;
   if(r.edit){
-    const fld = (id, lbl, val, ta, minh, copy) => `<div class="fld"><label>${lbl}</label>${ta ? `<textarea id="${id}" style="min-height:${minh}px;padding-right:${copy?88:48}px">${esc(val)}</textarea>` : `<textarea id="${id}" rows="1" style="padding-right:48px">${esc(val)}</textarea>`}<div class="clr">${copy ? `<button data-c="${id}" style="color:color-mix(in srgb,var(--primary) 70%,transparent)">${ic('copy')}</button>` : ''}<button data-x="${id}" style="color:color-mix(in srgb,var(--error) 70%,transparent)">${ic('del')}</button></div></div>`;
-    body = `${fld('fR','Bibelstelle',r.inR,false)}${fld('fV','Tagesvers',r.inV,true,220)}${fld('fN','Deine Gedanken',r.inN,true,250,true)}<button class="btn full" data-a="nsave">${ic('check')} Speichern</button>`;
+    const fld = (id, lbl, val, ta, minh, copy) => `<div class="fld"><label>${lbl}</label>${ta ? `<textarea id="${id}" style="height:${minh}px;min-height:48px;padding-right:${copy?88:48}px">${esc(val)}</textarea>` : `<textarea id="${id}" rows="1" style="padding-right:48px">${esc(val)}</textarea>`}<div class="clr">${copy ? `<button data-c="${id}" style="color:color-mix(in srgb,var(--primary) 70%,transparent)">${ic('copy')}</button>` : ''}<button data-x="${id}" style="color:color-mix(in srgb,var(--error) 70%,transparent)">${ic('del')}</button></div></div>`;
+    body = `${fld('fR','Bibelstelle',r.inR,false)}${fld('fV','Tagesvers',r.inV,true,220)}${fld('fN','Deine Gedanken',r.inN,true,170,true)}<button class="btn full" data-a="nsave">${ic('check')} Speichern</button>`;
   } else {
     const R = getN('r',a), V = getN('v',a), N = getN('n',a);
     body = (R ? `<div class="ncard"><div class="row" style="justify-content:space-between"><span class="k">BIBELSTELLE</span>${refLink(R, 'ibtn sm', ic('book',20))}</div><div class="selectable" style="font-size:24px;font-weight:700;white-space:pre-line">${esc(R)}</div></div>` : '') +
@@ -859,7 +861,7 @@ function settingsView(){
   ${themeCard()}
   <div class="card"><h3>Alle Daten löschen</h3><div class="sub">Lesefortschritt, Notizen und eigene Pläne auf diesem Gerät entfernen.</div><div style="height:12px"></div>
     <button class="btn" style="background:var(--error);color:var(--onerror);border-radius:12px;width:100%" data-a="reset">${ic('del')} Daten zurücksetzen</button></div>
-  <div class="center small muted" style="padding:8px 0 16px">Flächenlese Web · Version 1.18</div></div>`;
+  <div class="center small muted" style="padding:8px 0 16px">Flächenlese Web · Version 1.19</div></div>`;
 }
 
 /* ================= DIALOGE ================= */
