@@ -144,9 +144,12 @@ h1{font-size:28px;font-weight:700;margin:0 0 24px}
 /* Dialog */
 .ovl{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:50;padding:24px;animation:fade .15s}
 @keyframes fade{from{opacity:0}}
-.dlg{background:var(--sc-high);border-radius:28px;padding:24px;width:100%;max-width:420px;max-height:86vh;display:flex;flex-direction:column;-webkit-user-select:text;user-select:text}
+.dlg{background:var(--sc-high);border-radius:28px;padding:24px;width:100%;max-width:420px;max-height:86vh;max-height:calc(100dvh - 24px);display:flex;flex-direction:column;-webkit-user-select:text;user-select:text}
 .dlg .dt2{font-size:24px;line-height:32px;margin-bottom:16px;font-weight:400}
 .dlg .body{overflow-y:auto;display:flex;flex-direction:column;gap:16px;color:var(--onsv);font-size:14px;margin:0 -4px;padding:0 4px}
+.fld{scroll-margin-top:14px}
+body.kb .page-pad{padding-bottom:60vh}
+@media (max-height:680px){.ovl{padding:10px}.dlg{padding:18px;border-radius:24px}.dlg .dt2{font-size:20px;line-height:26px;margin-bottom:8px}.dlg .body{gap:8px}.dlg .acts{margin-top:10px}.dlg hr{margin:0}}
 .dlg .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:24px;flex-wrap:wrap}
 .tbtn{color:var(--primary);font-size:14px;font-weight:500;padding:10px 12px;border-radius:20px}
 .fbtn{background:var(--primary);color:var(--onprimary);font-size:14px;font-weight:500;padding:10px 24px;border-radius:20px}
@@ -801,7 +804,7 @@ function noteView(r){
   let body;
   if(r.edit){
     const fld = (id, lbl, val, ta, minh, copy) => `<div class="fld"><label>${lbl}</label>${ta ? `<textarea id="${id}" style="min-height:${minh}px;padding-right:${copy?88:48}px">${esc(val)}</textarea>` : `<textarea id="${id}" rows="1" style="padding-right:48px">${esc(val)}</textarea>`}<div class="clr">${copy ? `<button data-c="${id}" style="color:color-mix(in srgb,var(--primary) 70%,transparent)">${ic('copy')}</button>` : ''}<button data-x="${id}" style="color:color-mix(in srgb,var(--error) 70%,transparent)">${ic('del')}</button></div></div>`;
-    body = `${fld('fR','Bibelstelle',r.inR,false)}${fld('fV','Tagesvers',r.inV,true,56)}${fld('fN','Deine Gedanken',r.inN,true,250,true)}<button class="btn full" data-a="nsave">${ic('check')} Speichern</button>`;
+    body = `${fld('fR','Bibelstelle',r.inR,false)}${fld('fV','Tagesvers',r.inV,true,220)}${fld('fN','Deine Gedanken',r.inN,true,250,true)}<button class="btn full" data-a="nsave">${ic('check')} Speichern</button>`;
   } else {
     const R = getN('r',a), V = getN('v',a), N = getN('n',a);
     body = (R ? `<div class="ncard"><div class="row" style="justify-content:space-between"><span class="k">BIBELSTELLE</span>${refLink(R, 'ibtn sm', ic('book',20))}</div><div class="selectable" style="font-size:24px;font-weight:700;white-space:pre-line">${esc(R)}</div></div>` : '') +
@@ -856,7 +859,7 @@ function settingsView(){
   ${themeCard()}
   <div class="card"><h3>Alle Daten löschen</h3><div class="sub">Lesefortschritt, Notizen und eigene Pläne auf diesem Gerät entfernen.</div><div style="height:12px"></div>
     <button class="btn" style="background:var(--error);color:var(--onerror);border-radius:12px;width:100%" data-a="reset">${ic('del')} Daten zurücksetzen</button></div>
-  <div class="center small muted" style="padding:8px 0 16px">Flächenlese Web · Version 1.17</div></div>`;
+  <div class="center small muted" style="padding:8px 0 16px">Flächenlese Web · Version 1.18</div></div>`;
 }
 
 /* ================= DIALOGE ================= */
@@ -931,7 +934,7 @@ function yvPick(ref){
 function autofillDialog(r){
   const o = { link: P.autofill_remove_link ?? true, num: P.autofill_remove_verse_num ?? true, tr: P.autofill_remove_translation ?? true, colon: P.autofill_replace_colon ?? true, quotes: P.autofill_remove_quotes ?? true, clip: P.autofill_copy_to_clipboard ?? false };
   const labels = [['link','Link entfernen'],['num','Versnummer entfernen [1]'],['tr','Übersetzung entfernen (bibel.heute)'],['colon','Doppelpunkt zu Komma (19:1 -> 19,1)'],['quotes','Anführungszeichen entfernen'],['clip','In Zwischenablage kopieren']];
-  const ov = dialog('<b>Bibelstelle einfügen</b>', `<div style="position:relative"><textarea class="inp" id="afT" placeholder="Text hier einfügen..." style="height:150px;border-radius:12px;resize:none"></textarea></div>
+  const ov = dialog('<b>Bibelstelle einfügen</b>', `<div style="position:relative"><textarea class="inp" id="afT" placeholder="Text hier einfügen..." style="height:clamp(72px,22vh,150px);border-radius:12px;resize:none"></textarea></div>
     <div>${labels.map(([k,l]) => `<button class="radio" data-k="${k}" style="font-size:14px;padding:6px 0"><span class="chk ${o[k]?'on':''}">${o[k]?ic('check'):''}</span>${l}</button>`).join('')}</div>`,
     [{label:'Abbrechen'},{label:'Autofill', filled:true, onClick: ov2 => {
       const text = ov2.querySelector('#afT').value; if(!text.trim()) return false;
@@ -1329,6 +1332,14 @@ function notifDialog(){
   ov.querySelectorAll('[data-np]').forEach(b => b.onclick = () => { const id = b.dataset.np; if(plans.has(id)) plans.delete(id); else plans.add(id); if(!plans.size) plans.add(id); setChk(b.querySelector('.chk'), plans.has(id)); });
   ov.querySelector('#nTest').onclick = () => { try{ window.FLApp.requestNotificationPermission(); window.FLApp.testNotification(JSON.stringify([...plans])); toast('Test gesendet'); }catch(e){ toast('Nicht möglich'); } };
 }
+/* Tastatur: fokussiertes Feld sichtbar scrollen */
+document.addEventListener('focusin', e => {
+  const t = e.target; if(!t.matches || !t.matches('input:not([type=checkbox]):not([type=radio]):not([type=range]),textarea')) return;
+  document.body.classList.add('kb');
+  const inDlg = !!t.closest('.dlg'); clearTimeout(window.__kbT);
+  window.__kbT = setTimeout(() => { try{ (inDlg ? t : (t.closest('.fld') || t)).scrollIntoView({block: inDlg ? 'center' : 'start', behavior: 'smooth'}); }catch(err){} }, 350);
+});
+document.addEventListener('focusout', () => setTimeout(() => { if(!document.activeElement || !document.activeElement.matches('input,textarea')) document.body.classList.remove('kb'); }, 150));
 /* Übertragung Browser -> Android-App */
 const b64url = bytes => { let bin = ''; for(let i=0;i<bytes.length;i+=0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i+0x8000)); return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); };
 const fromB64url = str => { str = str.replace(/-/g,'+').replace(/_/g,'/'); while(str.length % 4) str += '='; const bin = atob(str); const u = new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) u[i] = bin.charCodeAt(i); return u; };
