@@ -15,6 +15,8 @@ import android.view.View
 import android.webkit.JavascriptInterface
 import android.widget.Toast
 import org.json.JSONArray
+import org.json.JSONObject
+import android.content.res.Configuration
 import java.io.File
 
 /** Schnittstelle, über die die Web-App mit Android spricht (window.FLApp). */
@@ -26,6 +28,27 @@ class Bridge(private val a: MainActivity) {
         Store.saveSnapshot(c, json)
         Reminders.schedule(c)
         Widgets.updateAll(c)
+    }
+
+    /** Material-You-Farben des Handys (Android 12+). Leer, wenn nicht verfügbar. */
+    @JavascriptInterface
+    fun systemColors(): String {
+        if (Build.VERSION.SDK_INT < 31) return ""
+        return try {
+            val r = a.resources
+            val th = a.theme
+            fun hex(id: Int) = String.format("#%06X", r.getColor(id, th) and 0xFFFFFF)
+            val n = JSONObject(); val ac = JSONObject()
+            n.put("0", hex(android.R.color.system_neutral1_0)); n.put("10", hex(android.R.color.system_neutral1_10))
+            n.put("50", hex(android.R.color.system_neutral1_50)); n.put("100", hex(android.R.color.system_neutral1_100))
+            n.put("200", hex(android.R.color.system_neutral1_200)); n.put("700", hex(android.R.color.system_neutral1_700))
+            n.put("800", hex(android.R.color.system_neutral1_800)); n.put("900", hex(android.R.color.system_neutral1_900))
+            ac.put("0", hex(android.R.color.system_accent1_0)); ac.put("100", hex(android.R.color.system_accent1_100))
+            ac.put("200", hex(android.R.color.system_accent1_200)); ac.put("600", hex(android.R.color.system_accent1_600))
+            ac.put("700", hex(android.R.color.system_accent1_700)); ac.put("800", hex(android.R.color.system_accent1_800))
+            val night = (r.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+            JSONObject().put("n", n).put("a", ac).put("night", night).toString()
+        } catch (e: Exception) { "" }
     }
 
     @JavascriptInterface

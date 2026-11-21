@@ -408,7 +408,15 @@ const lum = h => { const c = hex2rgb(h).map(v => { v /= 255; return v <= .03928 
 const contrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x,y) + .05) / (Math.min(x,y) + .05); };
 const bestOn = (bg, cands) => cands.reduce((best, c) => contrast(bg, c) > contrast(bg, best) ? c : best);
 const customThemes = () => P.custom_themes || [];
-function themeById(id){ if(THEMES[id]) return THEMES[id]; return customThemes().find(t => t.id === id) || null; }
+let MU = null;
+function loadMU(){ MU = null; if(!NATIVE) return; try{ const j = window.FLApp.systemColors && window.FLApp.systemColors(); if(j) MU = JSON.parse(j); }catch(e){ MU = null; } }
+function muColors(){
+  const n = MU.n, a = MU.a;
+  return MU.night
+    ? {bg:n[900], surface:n[800], nav:mixC(n[900], a[700], .25), text:n[100], accent:a[200], onAccent:a[800], read:a[700]}
+    : {bg:n[50], surface:n[10], nav:n[100], text:n[900], accent:a[600], onAccent:a[0], read:a[100]};
+}
+function themeById(id){ if(id === 'mu') return MU ? {n:'Material You (Handy-Farben)', c:muColors()} : null; if(THEMES[id]) return THEMES[id]; return customThemes().find(t => t.id === id) || null; }
 function themeColors(){ const t = themeById(P.theme); return t ? {...THEMES.grau.c, ...t.c} : THEMES.grau.c; }
 function migrateTheme(){
   if(P.theme === 'custom' && P.theme_custom){ const id = 'u_' + Date.now().toString(36); P.custom_themes = [...customThemes(), {id, n:'Eigenes Design', c:{...THEMES.grau.c, ...P.theme_custom}}]; P.theme = id; }
@@ -435,7 +443,7 @@ function themeCard(){
   const cur = themeById(P.theme) ? (P.theme || 'grau') : 'grau', isCustom = cur.startsWith('u_');
   const dot = (id, t) => `<button class="dot ${cur===id?'sel':''}" data-a="settheme" data-id="${esc(id)}" aria-label="${esc(t.n)}" style="background:${t.c.bg}"><i style="background:${t.c.accent}"></i></button>`;
   return `<div class="card"><h3>Design</h3><div class="sub">${esc(themeById(cur).n)}</div>
-    <div class="swrow">${Object.entries(THEMES).map(([id,t]) => dot(id, t)).join('')}${customThemes().map(t => dot(t.id, t)).join('')}<button class="dot add" data-a="themenew" aria-label="Neues Design">${ic('add',20)}</button></div>
+    <div class="swrow">${Object.entries(THEMES).map(([id,t]) => dot(id, t)).join('')}${MU ? dot('mu', themeById('mu')) : ''}${customThemes().map(t => dot(t.id, t)).join('')}<button class="dot add" data-a="themenew" aria-label="Neues Design">${ic('add',20)}</button></div>
     ${isCustom ? `<div class="row" style="gap:16px;margin-top:4px"><button class="tbtn" style="padding:8px 0 0" data-a="themeedit">Bearbeiten</button><button class="tbtn" style="padding:8px 0 0;color:var(--error)" data-a="themedel">Löschen</button></div>` : ''}</div>`;
 }
 function buildPicker(box, hex, onChange){
@@ -870,7 +878,7 @@ function settingsView(){
     ${isStandalone() ? '<div class="small" style="color:var(--primary)">✓ Flächenlese läuft als installierte App.</div>' : `${deferredInstall ? `<button class="btn" style="width:100%;border-radius:12px;margin-bottom:10px" data-a="install">${ic('download')} Jetzt installieren</button>` : ''}<div class="small muted" style="line-height:1.6"><b>Android (Chrome):</b> Menü ⋮ → „App installieren“ bzw. „Zum Startbildschirm hinzufügen“.<br><b>iPhone (Safari):</b> Teilen-Symbol → „Zum Home-Bildschirm“.<br>${isIOS() ? '<b style="color:var(--error)">Wichtig am iPhone:</b> Safari und die Home-Bildschirm-App haben getrennte Speicher. Nutze nur noch die App vom Home-Bildschirm.' : 'Danach startet Flächenlese wie eine normale App, auch offline.'}</div>`}
     <div class="small muted" style="margin-top:10px">Dauerhafter Speicher: ${storagePersisted === true ? '<span style="color:var(--primary)">aktiv ✓</span>' : storagePersisted === false ? 'nicht bestätigt (nach der Installation meist aktiv)' : 'unbekannt'}</div></div>`}
   ${themeCard()}
-  <div class="center small muted" style="padding:8px 0 16px">Flächenlese Web · Version 1.27</div></div>`;
+  <div class="center small muted" style="padding:8px 0 16px">Flächenlese Web · Version 1.28</div></div>`;
 }
 
 /* ================= DIALOGE ================= */
@@ -1440,7 +1448,7 @@ function applyNativeToggles(){
   return false;
 }
 window.flOpenDay = d => { try{ document.querySelectorAll('.ovl').forEach(o => o.remove()); tab = 'calendar'; stack = []; push({name:'day', date: clampDate(parseIso(d)), off:0}); }catch(e){} };
-window.flNativeResume = () => { const changed = applyNativeToggles(); if(changed || iso(today()) !== lastDay){ lastDay = iso(today()); render(true); } nativeSync(); };
+window.flNativeResume = () => { const wasMu = P.theme === 'mu'; loadMU(); if(wasMu){ applyTheme(); render(true); } const changed = applyNativeToggles(); if(changed || iso(today()) !== lastDay){ lastDay = iso(today()); render(true); } nativeSync(); };
 
 /* ================= KALENDER-ERINNERUNG (.ics) ================= */
 function makeIcs(){
@@ -1493,6 +1501,7 @@ function setupPullToRefresh(){
 /* ================= START ================= */
 load();
 migrateTheme();
+loadMU();
 applyTheme();
 setupPullToRefresh();
 if(NATIVE){ applyNativeToggles(); render(); nativeSync(); }
