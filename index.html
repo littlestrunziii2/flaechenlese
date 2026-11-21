@@ -864,7 +864,7 @@ function settingsView(){
     <div style="display:flex;flex-direction:column;gap:8px">
       <button class="btn tonal" style="border-radius:12px" data-a="csvexport">${ic('download')} Backup speichern (CSV)</button>
       <button class="btn tonal" style="border-radius:12px" data-a="csvimport">${ic('upload')} Backup / CSV importieren</button>
-      <button class="btn tonal" style="border-radius:12px" data-a="pdf">${ic('print')} Jahresübersicht als PDF</button>
+      <button class="btn tonal" style="border-radius:12px" data-a="pdf">${ic('print')} PDF-Export (Wochen wählen)</button>
     </div></div>
   ${NATIVE ? '' : `<div class="card"><div class="row">${ic('phone',24,'prim')}<h3>Als App installieren</h3></div><div style="height:8px"></div>
     ${isStandalone() ? '<div class="small" style="color:var(--primary)">✓ Flächenlese läuft als installierte App.</div>' : `${deferredInstall ? `<button class="btn" style="width:100%;border-radius:12px;margin-bottom:10px" data-a="install">${ic('download')} Jetzt installieren</button>` : ''}<div class="small muted" style="line-height:1.6"><b>Android (Chrome):</b> Menü ⋮ → „App installieren“ bzw. „Zum Startbildschirm hinzufügen“.<br><b>iPhone (Safari):</b> Teilen-Symbol → „Zum Home-Bildschirm“.<br>${isIOS() ? '<b style="color:var(--error)">Wichtig am iPhone:</b> Safari und die Home-Bildschirm-App haben getrennte Speicher. Nutze nur noch die App vom Home-Bildschirm.' : 'Danach startet Flächenlese wie eine normale App, auch offline.'}</div>`}
@@ -872,7 +872,7 @@ function settingsView(){
   ${themeCard()}
   <div class="card"><h3>Alle Daten löschen</h3><div class="sub">Lesefortschritt, Notizen und eigene Pläne auf diesem Gerät entfernen.</div><div style="height:12px"></div>
     <button class="btn" style="background:var(--error);color:var(--onerror);border-radius:12px;width:100%" data-a="reset">${ic('del')} Daten zurücksetzen</button></div>
-  <div class="center small muted" style="padding:8px 0 16px">Flächenlese Web · Version 1.25</div></div>`;
+  <div class="center small muted" style="padding:8px 0 16px">Flächenlese Web · Version 1.26</div></div>`;
 }
 
 /* ================= DIALOGE ================= */
@@ -1105,14 +1105,26 @@ function clearReadingData(){
 }
 
 /* ================= PDF / Drucken ================= */
-function buildPrint(year){
+function weeksOfYear(year){
+  const out = []; let mon = mondayOf({y:year, m:1, d:1});
+  while(mon.y <= year){
+    const days = [...Array(7)].map((_,i) => addDays(mon, i)); const sun = days[6];
+    if(days.some(a => a.y === year)){
+      const has = days.some(a => isRead(a) || getN('r',a) || getN('v',a) || getN('n',a)) || !!getN('wr', sun) || !!getN('wv', sun);
+      out.push({mon, sun, key: iso(mon), has, kw: isoWeek(mon)});
+    }
+    mon = addDays(mon, 7);
+  }
+  return out;
+}
+function buildPrint(year, sel){
   const t = planType(), pre = prefix(t); let pages = '';
   let mon = mondayOf({y:year, m:1, d:1});
   while(true){
     const days = [...Array(7)].map((_,i) => addDays(mon, i)); const sun = days[6];
     if(mon.y > year) break;
     const has = days.some(a => isRead(a) || getN('r',a) || getN('v',a) || getN('n',a)) || getN('wr', sun) || getN('wv', sun);
-    if(has && (days.some(a => a.y === year))){
+    if((sel ? sel.has(iso(mon)) : has) && (days.some(a => a.y === year))){
       const rows = days.map(a => `<tr><td><b style="color:#777;font-size:8px">${WD[dow(a)-1].toUpperCase()}</b><br><b style="color:#003D29">${pad(a.d)}.${pad(a.m)}.</b>${isRead(a) ? ' ✓' : ''}</td><td><b>${esc(splitPassages(effPassage(a)).join('\n'))}</b></td><td>${getN('r',a) ? `<b>${esc(getN('r',a))}</b>\n` : ''}${esc(getN('v',a))}</td><td>${esc(getN('n',a))}</td></tr>`).join('');
       const wr = getN('wr', sun), wv = getN('wv', sun), wn = weeklyNote(sun);
       pages += `<div class="pw"><h2>KW ${isoWeek(mon)} <span>${MN[sun.m-1]} ${sun.y}</span></h2><table><tr><th style="width:12%">TAG</th><th style="width:22%">STELLE</th><th style="width:33%">VERS</th><th>NOTIZ</th></tr>${rows}</table>
@@ -1122,8 +1134,24 @@ function buildPrint(year){
   }
   return pages || '<div class="pw">Keine Einträge für dieses Jahr gefunden.</div>';
 }
-async function exportPdf(){
-  const y = today().y; const content = buildPrint(y);
+function pdfDialog(){
+  const y = today().y, ws = weeksOfYear(y), cur = iso(mondayOf(today()));
+  const sel = new Set(ws.filter(w => w.has).map(w => w.key));
+  const rows = ws.map(w => `<button class="radio" data-w="${w.key}" style="font-size:14px;padding:6px 0"><span class="chk ${sel.has(w.key)?'on':''}">${sel.has(w.key)?ic('check'):''}</span>KW ${w.kw} · ${pad(w.mon.d)}.${pad(w.mon.m)}.–${pad(w.sun.d)}.${pad(w.sun.m)}.${w.key===cur?' (diese Woche)':''}${w.has?'':' <span class="muted">(leer)</span>'}</button>`).join('');
+  const ov = dialog('<b>PDF-Export ' + y + '</b>', `<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn tonal" id="pdA" type="button" style="height:36px;padding:0 14px">Alle</button><button class="btn tonal" id="pdE" type="button" style="height:36px;padding:0 14px">Mit Einträgen</button><button class="btn tonal" id="pdC" type="button" style="height:36px;padding:0 14px">Diese Woche</button><button class="btn tonal" id="pdN" type="button" style="height:36px;padding:0 14px">Keine</button></div><div id="pdL" style="max-height:min(340px,45vh);overflow:auto">${rows}</div><div id="pdC2" class="small muted"></div>`,
+    [{label:'Abbrechen'},{label:'PDF erstellen', filled:true, onClick: () => { if(!sel.size){ toast('Bitte mindestens eine Woche wählen'); return false; } exportPdf(y, new Set(sel)); }}]);
+  ov.querySelector('.body').style.gap = '8px';
+  const upd = () => { ov.querySelectorAll('[data-w]').forEach(b => { const on = sel.has(b.dataset.w); const c = b.querySelector('.chk'); c.classList.toggle('on', on); c.innerHTML = on ? ic('check') : ''; }); ov.querySelector('#pdC2').textContent = sel.size + ' von ' + ws.length + ' Wochen gewählt'; };
+  ov.querySelectorAll('[data-w]').forEach(b => b.onclick = () => { const k = b.dataset.w; sel.has(k) ? sel.delete(k) : sel.add(k); upd(); });
+  const setAll = f => { sel.clear(); ws.filter(f).forEach(w => sel.add(w.key)); upd(); };
+  ov.querySelector('#pdA').onclick = () => setAll(() => true);
+  ov.querySelector('#pdE').onclick = () => setAll(w => w.has);
+  ov.querySelector('#pdC').onclick = () => setAll(w => w.key === cur);
+  ov.querySelector('#pdN').onclick = () => setAll(() => false);
+  upd();
+}
+async function exportPdf(y = today().y, sel = null){
+  const content = buildPrint(y, sel);
   const inArtifact = !!(window.claude && typeof window.claude.use === 'function');
   if(NATIVE){ $('#print').innerHTML = content; setTimeout(() => { try{ window.FLApp.print(); }catch(e){ toast('Drucken nicht möglich'); } }, 100); return; }
   if(!inArtifact){ $('#print').innerHTML = content; setTimeout(() => { try{ window.print(); }catch(e){ toast('Drucken nicht möglich'); } }, 50); return; }
@@ -1194,7 +1222,7 @@ const ACT = {
   newplan(){ const f = $('#fileCsvPlan'); f.value = ''; f.click(); },
   csvexport(){ exportCsv(); },
   csvimport(){ const f = $('#fileBackup'); f.value = ''; f.click(); },
-  pdf(){ exportPdf(); },
+  pdf(){ pdfDialog(); },
   ics(){ makeIcs(); },
   notif(){ notifDialog(); },
   autobackup(){ autoBackupDialog(); },
